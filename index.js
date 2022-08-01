@@ -236,22 +236,34 @@ function Proxy(options = {}) {
     };
 }
 
+module.exports = Proxy
+
+// // Install
+
+// // npm i @ndiing/proxy
+
 // // Usage
 
 // const proxy = Proxy({
-//     // hostname
-//     // port
-//     // handleBeforeRequest(req,res,next){},
-//     // handleAfterRequest(req,res,next){},
-//     // handleBeforeResponse(req,res,reqServer,resServer,next){},
-//     handleAfterResponse(req,res,reqServer,resServer,next){
-//         // console.log(resServer.body)
-//         next()
-//     },
-// });
-// proxy.listen();
-// console.log("proxy listen");
+//     // Set hostname
+//     hostname: '127.0.0.1',// default value= 127.0.0.1
+//     // Set port
+//     port: 8888, // default value = 8888
+
+//     // Intercept
+//     // when finish call `next()`
+    
+//     handleBeforeRequest: (req, res, next) => next(),
+//     handleAfterRequest: (req, res, next) => next(),
+//     handleBeforeResponse: (req, res, reqServer, resServer, next) => next(),
+//     handleAfterResponse: (req, res, reqServer, resServer, next) => next(),
+
+// })
+
+// // Start proxy
+// proxy.listen()
+
+// // Stop proxy after 5s
 // setTimeout(() => {
-//     proxy.close();
-//     console.log("proxy closed");
-// }, 1000 * 1);
+//     proxy.close()
+// }, 1000*5)
