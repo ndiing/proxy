@@ -236,22 +236,22 @@ function Proxy(options = {}) {
     };
 }
 
-// Usage
+// // Usage
 
-const proxy = Proxy({
-    // hostname
-    // port
-    // handleBeforeRequest(req,res,next){},
-    // handleAfterRequest(req,res,next){},
-    // handleBeforeResponse(req,res,reqServer,resServer,next){},
-    handleAfterResponse(req,res,reqServer,resServer,next){
-        // console.log(resServer.body)
-        next()
-    },
-});
-proxy.listen();
-console.log("proxy listen");
-setTimeout(() => {
-    proxy.close();
-    console.log("proxy closed");
-}, 1000 * 1);
+// const proxy = Proxy({
+//     // hostname
+//     // port
+//     // handleBeforeRequest(req,res,next){},
+//     // handleAfterRequest(req,res,next){},
+//     // handleBeforeResponse(req,res,reqServer,resServer,next){},
+//     handleAfterResponse(req,res,reqServer,resServer,next){
+//         // console.log(resServer.body)
+//         next()
+//     },
+// });
+// proxy.listen();
+// console.log("proxy listen");
+// setTimeout(() => {
+//     proxy.close();
+//     console.log("proxy closed");
+// }, 1000 * 1);
