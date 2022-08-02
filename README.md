@@ -9,6 +9,7 @@ npm install @ndiing/proxy
 
 #### Usage
 
+```js
 const Proxy = require('@ndiing/proxy')
 
 const proxy = Proxy({
@@ -31,3 +32,4 @@ proxy.listen()
 setTimeout(() => {
     proxy.close()
 }, 1000*5)
+```
