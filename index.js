@@ -238,30 +238,33 @@ function Proxy(options = {}) {
 
 module.exports = Proxy
 
-// // Install
+// // # Proxy
+// // nodejs intercept proxy / web debugger
 
-// // npm i @ndiing/proxy
+// // ### Install
+// // ```
+// // npm install @ndiing/proxy
+// // ```
 
-// // Usage
+// // #### Usage
+
+// const Proxy = require('@ndiing/proxy')
 
 // const proxy = Proxy({
-//     // Set hostname
-//     hostname: '127.0.0.1',// default value= 127.0.0.1
-//     // Set port
-//     port: 8888, // default value = 8888
-
-//     // Intercept
-//     // when finish call `next()`
-    
-//     handleBeforeRequest: (req, res, next) => next(),
-//     handleAfterRequest: (req, res, next) => next(),
-//     handleBeforeResponse: (req, res, reqServer, resServer, next) => next(),
-//     handleAfterResponse: (req, res, reqServer, resServer, next) => next(),
-
+//     // hostname ,// default > "127.0.0.1",
+//     // port ,// default > 8888,
+//     // cwd ,// default > process.cwd(),
+//     // handleBeforeRequest ,// default > (req, res, next) => next(),
+//     // handleAfterRequest ,// default > (req, res, next) => next(),
+//     // handleBeforeResponse ,// default > (req, res, reqServer, resServer, next) => next(),
+//     // handleAfterResponse ,// default > (req, res, reqServer, resServer, next) => next(),
 // })
 
 // // Start proxy
 // proxy.listen()
+
+// // Stop proxy
+// // proxy.close()
 
 // // Stop proxy after 5s
 // setTimeout(() => {
