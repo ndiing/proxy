@@ -27,6 +27,6 @@
   },
   "devDependencies": {},
   "publishConfig":{
-    "@ndiing:registry": "https://npm.pkg.github.com"
+    "registry": "https://npm.pkg.github.com"
   }
 }
