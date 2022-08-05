@@ -1,35 +1,31 @@
+<a name="module_proxy"></a>
 
-# Proxy
-nodejs intercept proxy / web debugger
+## proxy
 
-### Install
-```
-npm install @ndiing/proxy
-```
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| options | <code>Object</code> |  | - |
+| options.hostname | <code>Object</code> | <code>127.0.0.1</code> | - |
+| options.port | <code>Object</code> | <code>8888</code> | - |
+| options.handleBeforeRequest | <code>Object</code> |  | (req,res,next) => next() |
+| options.handleAfterRequest | <code>Object</code> |  | (req,res,next) => next() |
+| options.handleBeforeResponse | <code>Object</code> |  | (req,res,reqServer,resServer,next) => next() |
+| options.handleAfterResponse | <code>Object</code> |  | (req,res,reqServer,resServer,next) => next() |
 
-#### Usage
 
-```js
-const Proxy = require('@ndiing/proxy')
+* [proxy](#module_proxy)
+    * [.listen()](#module_proxy.listen)
+    * [.close()](#module_proxy.close)
 
-const proxy = Proxy({
-    // hostname ,// default > "127.0.0.1",
-    // port ,// default > 8888,
-    // cwd ,// default > process.cwd(),
-    // handleBeforeRequest ,// default > (req, res, next) => next(),
-    // handleAfterRequest ,// default > (req, res, next) => next(),
-    // handleBeforeResponse ,// default > (req, res, reqServer, resServer, next) => next(),
-    // handleAfterResponse ,// default > (req, res, reqServer, resServer, next) => next(),
-})
+<a name="module_proxy.listen"></a>
 
-// Start proxy
-proxy.listen()
+### proxy.listen()
+start proxy
 
-// Stop proxy
-// proxy.close()
+**Kind**: static method of [<code>proxy</code>](#module_proxy)  
+<a name="module_proxy.close"></a>
 
-// Stop proxy after 5s
-setTimeout(() => {
-    proxy.close()
-}, 1000*5)
-```
+### proxy.close()
+stop proxy
+
+**Kind**: static method of [<code>proxy</code>](#module_proxy)  

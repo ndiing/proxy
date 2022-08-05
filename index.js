@@ -19,6 +19,17 @@ process.on("unhandledRejection", (reason, promise) => {
     console.log(promise);
 });
 
+/**
+ * 
+ * @param {Object} options -
+ * @param {Object} options.hostname=127.0.0.1 -
+ * @param {Object} options.port=8888 -
+ * @param {Object} options.handleBeforeRequest - (req,res,next) => next()
+ * @param {Object} options.handleAfterRequest - (req,res,next) => next()
+ * @param {Object} options.handleBeforeResponse - (req,res,reqServer,resServer,next) => next()
+ * @param {Object} options.handleAfterResponse - (req,res,reqServer,resServer,next) => next()
+ * @module proxy
+ */
 function Proxy(options = {}) {
     const {
         //
@@ -195,6 +206,10 @@ function Proxy(options = {}) {
         req.pipe(reqServer);
     }
 
+    /**
+     * start proxy
+     * @memberof module:proxy
+     */
     async function listen() {
         await enableProxy();
 
@@ -218,6 +233,10 @@ function Proxy(options = {}) {
         httpsServer.on("request", handleRequest);
     }
 
+    /**
+     * stop proxy
+     * @memberof module:proxy
+     */
     async function close() {
         httpServer.close();
         httpsServer.close();
@@ -229,44 +248,13 @@ function Proxy(options = {}) {
     }
 
     return {
-        // createCert,
-        // createCA,
+        createCert,
+        createCA,
+        enableProxy,
+        disableProxy,
         listen,
         close,
     };
 }
 
 module.exports = Proxy
-
-// // # Proxy
-// // nodejs intercept proxy / web debugger
-
-// // ### Install
-// // ```
-// // npm install @ndiing/proxy
-// // ```
-
-// // #### Usage
-
-// const Proxy = require('@ndiing/proxy')
-
-// const proxy = Proxy({
-//     // hostname ,// default > "127.0.0.1",
-//     // port ,// default > 8888,
-//     // cwd ,// default > process.cwd(),
-//     // handleBeforeRequest ,// default > (req, res, next) => next(),
-//     // handleAfterRequest ,// default > (req, res, next) => next(),
-//     // handleBeforeResponse ,// default > (req, res, reqServer, resServer, next) => next(),
-//     // handleAfterResponse ,// default > (req, res, reqServer, resServer, next) => next(),
-// })
-
-// // Start proxy
-// proxy.listen()
-
-// // Stop proxy
-// // proxy.close()
-
-// // Stop proxy after 5s
-// setTimeout(() => {
-//     proxy.close()
-// }, 1000*5)
