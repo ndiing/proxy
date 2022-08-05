@@ -1,6 +1,6 @@
 {
   "name": "@ndiing/proxy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "nodejs low level intercepting proxy",
   "main": "index.js",
   "scripts": {
