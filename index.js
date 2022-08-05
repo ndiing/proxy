@@ -20,6 +20,12 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 /**
+ * Nodejs web proxy debugger
+ * 
+ * ### Install
+ * ```
+ * npm install @ndiing/proxy
+ * ```
  * 
  * @param {Object} options -
  * @param {Object} options.hostname=127.0.0.1 -

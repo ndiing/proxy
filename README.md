@@ -1,6 +1,8 @@
 <a name="module_proxy"></a>
 
 ## proxy
+Nodejs web proxy debugger### Install```npm install @ndiing/proxy```
+
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
