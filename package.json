@@ -4,7 +4,7 @@
     "regedit": "^5.1.1"
   },
   "name": "@ndiing/proxy",
-  "description": "<a name=\"module_proxy\"></a>",
+  "description": "Nodejs transparent proxy",
   "version": "1.0.5",
   "main": "index.js",
   "directories": {
