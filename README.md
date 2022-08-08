@@ -1,81 +1,168 @@
-<a name="module_Proxy"></a>
+<a name="module_proxy"></a>
 
-## Proxy
-Nodejs intercept Proxy### Install```npm install @ndiing/proxy```### Usage```jsconst Proxy = require('../index.js')// Create proxyconst proxy = Proxy({    port: 8888,    hostname: "127.0.0.1",    beforeRequest: (req, res, next) => next(),    afterRequest: (req, res, next) => next(),    beforeResponse: (req, res, next) => next(),    afterResponse: (req, res, reqServer, resServer, next) => {        console.log(req.postData)        console.log(resServer.content)        next();    },});// Start proxyproxy.listen();console.log("listened");setTimeout(() => {    // Stop proxy    proxy.close();    console.log("closed");}, 1000 * 60);```
+## proxy
+Nodejs transparent proxy### Install```npm install @ndiing/proxy```
 
+**See**: [./examples/proxy.js](./examples/proxy.js)  
+
+* [proxy](#module_proxy)
+    * [~TransparentProxy](#module_proxy..TransparentProxy)
+        * [.enableWindowsInternetSettings()](#module_proxy..TransparentProxy+enableWindowsInternetSettings)
+        * [.disableWindowsInternetSettings()](#module_proxy..TransparentProxy+disableWindowsInternetSettings)
+        * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Any</code>
+        * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Any</code>
+        * [.handleClientConnection(socket)](#module_proxy..TransparentProxy+handleClientConnection)
+        * [.handleClientConnect(req, socket, head)](#module_proxy..TransparentProxy+handleClientConnect)
+        * [.handleClientRequest(req, res)](#module_proxy..TransparentProxy+handleClientRequest)
+        * [.handleClientError(err)](#module_proxy..TransparentProxy+handleClientError)
+        * [.handleSocketError(err)](#module_proxy..TransparentProxy+handleSocketError)
+        * [.SNICallback(servername, cb)](#module_proxy..TransparentProxy+SNICallback)
+        * [.listen(port, hostname, backlog)](#module_proxy..TransparentProxy+listen) ⇒ <code>Object</code>
+        * [.close()](#module_proxy..TransparentProxy+close)
+    * [~req](#module_proxy..req)
+    * [~res](#module_proxy..res)
+
+<a name="module_proxy..TransparentProxy"></a>
+
+### proxy~TransparentProxy
+**Kind**: inner class of [<code>proxy</code>](#module_proxy)  
+
+* [~TransparentProxy](#module_proxy..TransparentProxy)
+    * [.enableWindowsInternetSettings()](#module_proxy..TransparentProxy+enableWindowsInternetSettings)
+    * [.disableWindowsInternetSettings()](#module_proxy..TransparentProxy+disableWindowsInternetSettings)
+    * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Any</code>
+    * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Any</code>
+    * [.handleClientConnection(socket)](#module_proxy..TransparentProxy+handleClientConnection)
+    * [.handleClientConnect(req, socket, head)](#module_proxy..TransparentProxy+handleClientConnect)
+    * [.handleClientRequest(req, res)](#module_proxy..TransparentProxy+handleClientRequest)
+    * [.handleClientError(err)](#module_proxy..TransparentProxy+handleClientError)
+    * [.handleSocketError(err)](#module_proxy..TransparentProxy+handleSocketError)
+    * [.SNICallback(servername, cb)](#module_proxy..TransparentProxy+SNICallback)
+    * [.listen(port, hostname, backlog)](#module_proxy..TransparentProxy+listen) ⇒ <code>Object</code>
+    * [.close()](#module_proxy..TransparentProxy+close)
+
+<a name="module_proxy..TransparentProxy+enableWindowsInternetSettings"></a>
+
+#### transparentProxy.enableWindowsInternetSettings()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+disableWindowsInternetSettings"></a>
+
+#### transparentProxy.disableWindowsInternetSettings()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+createCert"></a>
+
+#### transparentProxy.createCert(domain, ca) ⇒ <code>Any</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
-| options | <code>Object</code> | 
+| domain | <code>\*</code> | 
+| ca | <code>\*</code> | 
 
+<a name="module_proxy..TransparentProxy+createCA"></a>
 
-* [Proxy](#module_Proxy)
-    * [.enableWindowsProxy(port, hostname)](#module_Proxy.enableWindowsProxy)
-    * [.disableWindowsProxy()](#module_Proxy.disableWindowsProxy)
-    * [.createCert(domain, ca)](#module_Proxy.createCert) ⇒ <code>Object</code>
-    * [.trustedRootCA()](#module_Proxy.trustedRootCA) ⇒ <code>Promise</code>
-    * [.createCA()](#module_Proxy.createCA) ⇒ <code>Object</code>
-    * [.listen(port, hostname, backlog)](#module_Proxy.listen)
-    * [.close()](#module_Proxy.close)
+#### transparentProxy.createCA() ⇒ <code>Any</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+handleClientConnection"></a>
 
-<a name="module_Proxy.enableWindowsProxy"></a>
+#### transparentProxy.handleClientConnection(socket)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
-### Proxy.enableWindowsProxy(port, hostname)
-Enable windows proxy server
+| Param | Type |
+| --- | --- |
+| socket | <code>\*</code> | 
 
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
+<a name="module_proxy..TransparentProxy+handleClientConnect"></a>
 
-| Param | Type | Description |
+#### transparentProxy.handleClientConnect(req, socket, head)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| req | <code>\*</code> | 
+| socket | <code>\*</code> | 
+| head | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+handleClientRequest"></a>
+
+#### transparentProxy.handleClientRequest(req, res)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| req | <code>\*</code> | 
+| res | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+handleClientError"></a>
+
+#### transparentProxy.handleClientError(err)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| err | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+handleSocketError"></a>
+
+#### transparentProxy.handleSocketError(err)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| err | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+SNICallback"></a>
+
+#### transparentProxy.SNICallback(servername, cb)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| servername | <code>\*</code> | 
+| cb | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+listen"></a>
+
+#### transparentProxy.listen(port, hostname, backlog) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| port | <code>\*</code> | 
+| hostname | <code>\*</code> | 
+| backlog | <code>\*</code> | 
+
+<a name="module_proxy..TransparentProxy+close"></a>
+
+#### transparentProxy.close()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..req"></a>
+
+### proxy~req
+**Kind**: inner typedef of [<code>proxy</code>](#module_proxy)  
+**Properties**
+
+| Name | Type | Description |
 | --- | --- | --- |
-| port | <code>Number</code> | - |
-| hostname | <code>String</code> | - |
+| req.method | <code>String</code> | - |
+| req.protocol | <code>String</code> | - |
+| req.hostname | <code>String</code> | - |
+| req.port | <code>Number</code> | - |
+| req.path | <code>String</code> | - |
+| req.headers | <code>Object</code> | - |
+| req.stream | <code>Stream</code> | - |
+| req.body | <code>Buffer</code> | - |
 
-<a name="module_Proxy.disableWindowsProxy"></a>
+<a name="module_proxy..res"></a>
 
-### Proxy.disableWindowsProxy()
-Disabled windows proxy server
+### proxy~res
+**Kind**: inner typedef of [<code>proxy</code>](#module_proxy)  
+**Properties**
 
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
-<a name="module_Proxy.createCert"></a>
-
-### Proxy.createCert(domain, ca) ⇒ <code>Object</code>
-Create TLS Certificate
-
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
-
-| Param | Type | Description |
+| Name | Type | Description |
 | --- | --- | --- |
-| domain | <code>String</code> | - |
-| ca | <code>Object</code> | - |
+| res.status | <code>Number</code> | - |
+| res.headers | <code>Object</code> | - |
+| res.stream | <code>Stream</code> | - |
+| res.body | <code>Buffer</code> | - |
 
-<a name="module_Proxy.trustedRootCA"></a>
-
-### Proxy.trustedRootCA() ⇒ <code>Promise</code>
-Trusted Root Certificate Authorization on windows
-
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
-<a name="module_Proxy.createCA"></a>
-
-### Proxy.createCA() ⇒ <code>Object</code>
-Create Certificate Authorization
-
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
-<a name="module_Proxy.listen"></a>
-
-### Proxy.listen(port, hostname, backlog)
-Start proxy
-
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| port | <code>Number</code> | - |
-| hostname | <code>String</code> | - |
-| backlog | <code>function</code> | - |
-
-<a name="module_Proxy.close"></a>
-
-### Proxy.close()
-Stop proxy
-
-**Kind**: static method of [<code>Proxy</code>](#module_Proxy)  

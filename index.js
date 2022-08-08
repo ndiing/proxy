@@ -1,76 +1,66 @@
 const http = require("http");
 const https = require("https");
-const mkcert = require("mkcert");
-const tls = require("tls");
 const net = require("net");
+const tls = require("tls");
 const fs = require("fs");
-const { exec } = require("child_process");
+const zlib = require("zlib");
 const { promisify } = require("util");
+const { exec } = require("child_process");
+const mkcert = require("mkcert");
 const regedit = require("regedit").promisified;
-
-process.on("uncaughtException", (error) => {
-    console.log("uncaughtException", error);
+process.on("uncaughtException", (err) => {
+    console.log(err);
 });
-process.on("unhandledRejection", (error) => {
-    console.log("unhandledRejection", error);
+process.on("unhandledRejection", (err) => {
+    console.log(err);
 });
 
 /**
- * Nodejs intercept Proxy
+ * Nodejs transparent proxy
  * ### Install
  * ```
  * npm install @ndiing/proxy
  * ```
- * ### Usage
- * ```js
- * const Proxy = require('../index.js')
- *
- * // Create proxy
- * const proxy = Proxy({
- *     port: 8888,
- *     hostname: "127.0.0.1",
- *     beforeRequest: (req, res, next) => next(),
- *     afterRequest: (req, res, next) => next(),
- *     beforeResponse: (req, res, next) => next(),
- *     afterResponse: (req, res, reqServer, resServer, next) => {
- *         console.log(req.postData)
- *         console.log(resServer.content)
- *         next();
- *     },
- * });
- *
- * // Start proxy
- * proxy.listen();
- * console.log("listened");
- *
- * setTimeout(() => {
- *     // Stop proxy
- *     proxy.close();
- *     console.log("closed");
- * }, 1000 * 60);
- *
- * ```
- * @param {Object} options
- * @module Proxy
+ * @see {@link ./examples/proxy.js}
+ * @module proxy
  */
-function Proxy(options = {}) {
-    options = {
-        port: 8888,
-        hostname: "127.0.0.1",
-        beforeRequest: (req, res, next) => next(),
-        afterRequest: (req, res, next) => next(),
-        beforeResponse: (req, res, next) => next(),
-        afterResponse: (req, res, reqServer, resServer, next) => next(),
-        ...options,
-    };
+
+/**
+ *
+ */
+class TransparentProxy {
+    routes = [];
 
     /**
-     * Enable windows proxy server
-     * @param {Number} port -
-     * @param {String} hostname -
-     * @memberof module:Proxy
+     *
      */
-    async function enableWindowsProxy(port = options.port, hostname = options.hostname) {
+    constructor(routes = []) {
+        this.handleClientConnection = this.handleClientConnection.bind(this);
+        this.handleClientConnect = this.handleClientConnect.bind(this);
+        this.handleClientRequest = this.handleClientRequest.bind(this);
+        this.handleClientError = this.handleClientError.bind(this);
+        this.handleSocketError = this.handleSocketError.bind(this);
+        this.SNICallback = this.SNICallback.bind(this);
+
+        for (let i = 0; i < routes.length; i++) {
+            const route = routes[i];
+            this.add(route);
+        }
+    }
+
+    add(route = {}) {
+        let { method = ".*", protocol = ".*", hostname = ".*", path = ".*", callback = (req, res, next) => next() } = route;
+        method = new RegExp(method);
+        protocol = new RegExp(protocol);
+        hostname = new RegExp(hostname);
+        path = new RegExp(path);
+        this.routes.push({ method, protocol, hostname, path, callback });
+    }
+
+    /**
+     *
+     */
+    async enableWindowsInternetSettings() {
         try {
             await regedit.putValue({
                 "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
@@ -83,21 +73,18 @@ function Proxy(options = {}) {
                         type: "REG_SZ",
                     },
                     ProxyServer: {
-                        value: `http=${hostname}:${port};https=${hostname}:${port};ftp=${hostname}:${port}`,
+                        value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`,
                         type: "REG_SZ",
                     },
                 },
             });
-        } catch (error) {
-            // ignore
-        }
+        } catch (error) {}
     }
 
     /**
-     * Disabled windows proxy server
-     * @memberof module:Proxy
+     *
      */
-    async function disableWindowsProxy() {
+    async disableWindowsInternetSettings() {
         try {
             await regedit.putValue({
                 "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
@@ -115,19 +102,16 @@ function Proxy(options = {}) {
                     },
                 },
             });
-        } catch (error) {
-            // ignore
-        }
+        } catch (error) {}
     }
 
     /**
-     * Create TLS Certificate
-     * @param {String} domain -
-     * @param {Object} ca -
-     * @returns {Object}
-     * @memberof module:Proxy
+     *
+     * @param {*} domain
+     * @param {*} ca
+     * @returns {Any}
      */
-    function createCert(domain, ca = {}) {
+    async createCert(domain, ca) {
         return mkcert.createCert({
             domains: ["::1", "127.0.0.1", "localhost", domain],
             validityDays: 365,
@@ -137,184 +121,253 @@ function Proxy(options = {}) {
     }
 
     /**
-     * Trusted Root Certificate Authorization on windows
-     * @returns {Promise}
-     * @memberof module:Proxy
+     *
+     * @returns {Any}
      */
-    function trustedRootCA() {
-        return promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}/cert.pem'"`);
-    }
-
-    /**
-     * Create Certificate Authorization
-     * @returns {Object}
-     * @memberof module:Proxy
-     */
-    async function createCA() {
+    async createCA() {
         let ca = {};
         try {
-            ca = {
-                cert: fs.readFileSync("./cert.pem"),
-                key: fs.readFileSync("./key.pem"),
-            };
+            ca.key = fs.readFileSync("./ca.key");
+            ca.cert = fs.readFileSync("./ca.crt");
         } catch (error) {
             ca = await mkcert.createCA({
-                organization: "CA",
-                countryCode: "CA",
-                state: "CA",
-                locality: "CA",
+                organization: "NDIING",
+                countryCode: "ID",
+                state: "JATIM",
+                locality: "PACITAN",
                 validityDays: 365,
             });
-            fs.writeFileSync("./cert.pem", ca.cert);
-            fs.writeFileSync("./key.pem", ca.key);
-            await trustedRootCA();
+            fs.writeFileSync("./ca.key", ca.key);
+            fs.writeFileSync("./ca.crt", ca.cert);
+            await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
         }
         return ca;
     }
 
-    let httpServer;
-    let httpsServer;
+    /**
+     *
+     * @param {*} socket
+     */
+    handleClientConnection(socket) {}
 
     /**
-     * Start proxy
-     * @param {Number} port -
-     * @param {String} hostname -
-     * @param {Function} backlog -
-     * @memberof module:Proxy
+     *
+     * @param {*} req
+     * @param {*} socket
+     * @param {*} head
      */
-    async function listen(port = options.port, hostname = options.hostname, backlog = function () {}) {
-        await enableWindowsProxy(options.port, options.hostname);
-
-        async function handleClientRequest(req, res) {
-            const url = { protocol: "http:", port: 80 };
-            let protocol = http;
-            if (req.socket.encrypted) {
-                url.protocol = "https:";
-                url.port = 443;
-                protocol = https;
-            }
-            const [hostname, port] = req.headers.host.split(":");
-            const requestOptions = {
-                method: req.method,
-                protocol: url.protocol,
-                hostname,
-                port: parseInt(port || url.port),
-                path: req.url,
-                headers: {
-                    ...req.headers,
-                    // Host: req.headers.host,
-                    Connection: "keep-alive",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
-                    Accept: "*/*", //"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-                    "Accept-Encoding": "*", //"gzip, deflate, br",
-                    "Accept-Language": "*", //"en-US,en;q=0.9,id;q=0.8",
-                },
-            };
-
-            // har request
-            req.postData = {
-                mimeType: req.headers["content-type"],
-                text: "",
-            };
-            const buffer = [];
-            for await (const chunk of req) buffer.push(chunk);
-            req.postData.text = Buffer.concat(buffer).toString();
-            await new Promise((resolve) => options.beforeRequest(req, res, (next) => resolve()));
-            async function callback(resServer) {
-                await new Promise((resolve) => options.afterRequest(req, res, (next) => resolve()));
-                await new Promise((resolve) => options.beforeResponse(req, res, (next) => resolve()));
-                resServer.pipe(res);
-                // har response
-                resServer.content = {
-                    mimeType: resServer.headers["content-type"],
-                    text: "",
-                };
-                const buffer = [];
-                for await (const chunk of resServer) buffer.push(chunk);
-                resServer.content.text = Buffer.concat(buffer).toString();
-                await new Promise((resolve) => options.afterResponse(req, res, reqServer, resServer, (next) => resolve()));
-            }
-            const reqServer = protocol.request(requestOptions, callback);
-            req.pipe(reqServer);
-        }
-
-        function handleClientError(err) {}
-
-        function handleSocketError(err) {}
-
-        function handleClientConnect(req, socket, head) {
-            const port = httpsServer.address().port;
-            const host = hostname;
-
-            function connectionListener() {
-                socket.write(
-                    // prettier-ignore
-                    "HTTP/1.1 200 Connection Established\r\n" + 
-                    // "Proxy-agent: Node.js-Proxy\r\n" +
-                    "\r\n"
-                );
-                socketServer.write(head);
-                socketServer.pipe(socket);
-                socket.pipe(socketServer);
-            }
-
-            const socketServer = net.connect(port, host, connectionListener);
-
-            socket.on("error", handleSocketError);
-            socketServer.on("error", handleSocketError);
-        }
-
-        const ctxs = {};
-        async function SNICallback(servername, cb) {
-            let ctx;
-            if (ctxs[servername]) ctx = ctxs[servername];
-            else {
-                const ca = await createCA();
-                const cert = await createCert(servername, ca);
-                ctx = tls.createSecureContext(cert);
-                ctxs[servername] = ctx;
-            }
-            cb(undefined, ctx);
-        }
-
-        httpServer = http.createServer().listen(port, hostname, backlog);
-        httpsServer = https.createServer({ SNICallback }).listen(0, hostname);
-
-        httpServer.on("request", handleClientRequest);
-        httpsServer.on("request", handleClientRequest);
-        httpServer.on("error", handleClientError);
-        httpsServer.on("error", handleClientError);
-        httpServer.on("connect", handleClientConnect);
-        // httpServer.on("connection", (socket) => {
-        //     socket.on('data',chunk => {
-        //         console.log(''+chunk)
-        //     })
-        // });
+    handleClientConnect(req, socket, head) {
+        const socketServer = net.connect(this.httpsServer.address().port, this.hostname, () => {
+            socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+            socketServer.write(head);
+            socketServer.pipe(socket);
+            socket.pipe(socketServer);
+        });
+        socketServer.on("error", this.handleSocketError);
+        socket.on("error", this.handleSocketError);
     }
 
     /**
-     * Stop proxy
-     * @memberof module:Proxy
+     * @typedef req
+     * @property {String} req.method -
+     * @property {String} req.protocol -
+     * @property {String} req.hostname -
+     * @property {Number} req.port -
+     * @property {String} req.path -
+     * @property {Object} req.headers -
+     * @property {Stream} req.stream -
+     * @property {Buffer} req.body -
      */
-    async function close() {
-        httpServer.close();
-        httpsServer.close();
 
-        httpServer = null;
-        httpsServer = null;
+    /**
+     * @typedef res
+     * @property {Number} res.status -
+     * @property {Object} res.headers -
+     * @property {Stream} res.stream -
+     * @property {Buffer} res.body -
+     */
 
-        await disableWindowsProxy();
+    /**
+     *
+     * @param {*} req
+     * @param {*} res
+     */
+    async handleClientRequest(req, res) {
+        const instance = req.socket.encrypted ? https : http;
+        let [hostname, port] = req.headers.host.split(":");
+        const request = {};
+
+        request.method = req.method;
+        request.protocol = req.socket.encrypted ? "https:" : "http:";
+        request.hostname = hostname;
+        request.port = parseInt(port || (req.socket.encrypted ? 443 : 80));
+        request.path = req.url;
+        request.headers = req.headers;
+        // request.stream = req;
+        request.body = [];
+
+        for await (const chunk of req) {
+            request.body.push(chunk);
+        }
+
+        let handle;
+
+        // console.log(this.routes);
+        for (let i = 0; i < this.routes.length; i++) {
+            const { method, protocol, hostname, path, callback } = this.routes[i];
+            const passed =
+                method.test(request.method) && //
+                protocol.test(request.protocol) &&
+                hostname.test(request.hostname) &&
+                path.test(request.path);
+            if (passed) {
+                handle = callback;
+                break;
+            }
+        }
+
+        if (handle) {
+            await new Promise((resolve) => handle(request, null, () => resolve()));
+        }
+
+        const reqServer = instance.request(request, async (resServer) => {
+            const contentEncoding = resServer.headers["content-encoding"];
+            let readStream = resServer;
+
+            if (/\bdeflate\b/.test(contentEncoding)) {
+                readStream = zlib.createInflate();
+            } else if (/\bgzip\b/.test(contentEncoding)) {
+                readStream = zlib.createGunzip();
+            } else if (/\bbr\b/.test(contentEncoding)) {
+                readStream = zlib.createBrotliDecompress();
+            }
+
+            if (readStream !== resServer) {
+                resServer.pipe(readStream);
+            }
+            const response = {};
+            response.status = resServer.statusCode;
+            response.headers = resServer.headers;
+            // response.stream = resServer;
+            response.body = [];
+
+            for await (const chunk of readStream) {
+                response.body.push(chunk);
+            }
+
+            if (handle) {
+                await new Promise((resolve) => handle(null, response, () => resolve()));
+            }
+
+            res.writeHead(response.status, response.headers);
+
+            let writeStream = res;
+
+            if (/\bdeflate\b/.test(contentEncoding)) {
+                writeStream = zlib.createDeflate();
+            } else if (/\bgzip\b/.test(contentEncoding)) {
+                writeStream = zlib.createGzip();
+            } else if (/\bbr\b/.test(contentEncoding)) {
+                writeStream = zlib.createBrotliCompress();
+            }
+
+            if (writeStream !== res) {
+                writeStream.pipe(res);
+            }
+
+            if (response.body) {
+                response.body = Buffer.concat(response.body);
+                writeStream.write(response.body);
+            }
+            writeStream.end();
+        });
+
+        if (request.body) {
+            request.body = Buffer.concat(request.body);
+            reqServer.write(request.body);
+        }
+        reqServer.end();
     }
 
-    return {
-        enableWindowsProxy,
-        disableWindowsProxy,
-        createCert,
-        trustedRootCA,
-        createCA,
-        listen,
-        close,
-    };
+    /**
+     *
+     * @param {*} err
+     */
+    handleClientError(err) {}
+
+    /**
+     *
+     * @param {*} err
+     */
+    handleSocketError(err) {}
+
+    /**
+     *
+     * @param {*} servername
+     * @param {*} cb
+     */
+    async SNICallback(servername, cb) {
+        const err = null;
+        let ctx;
+
+        if (!this.ctx) {
+            this.ctx = {};
+        }
+
+        if (this.ctx[servername]) {
+            ctx = this.ctx[servername];
+        } else {
+            // createCA
+            const ca = await this.createCA();
+            // createCert
+            const cert = await this.createCert(servername, ca);
+            // createSecureContext
+            ctx = tls.createSecureContext(cert);
+            this.ctx[servername] = ctx;
+        }
+        cb(err, ctx);
+    }
+
+    /**
+     *
+     * @param {*} port
+     * @param {*} hostname
+     * @param {*} backlog
+     * @returns {Object}
+     */
+    async listen(port, hostname, backlog) {
+        if (typeof hostname == "function") {
+            backlog = hostname;
+            hostname = "127.0.0.1";
+        }
+        this.port = port;
+        this.hostname = hostname;
+        // enableWindowsInternetSettings
+        await this.enableWindowsInternetSettings();
+        // httpServer
+        this.httpServer = http.createServer().listen(this.port, this.hostname, backlog);
+        this.httpServer.on("connection", this.handleClientConnection);
+        this.httpServer.on("connect", this.handleClientConnect);
+        this.httpServer.on("request", this.handleClientRequest);
+        this.httpServer.on("error", this.handleClientError);
+        // httpsServer
+        this.httpsServer = https.createServer({ SNICallback: this.SNICallback }).listen(0, hostname);
+        this.httpsServer.on("request", this.handleClientRequest);
+        this.httpsServer.on("error", this.handleClientError);
+        return this.httpServer;
+    }
+
+    /**
+     *
+     */
+    async close() {
+        this.httpServer.close();
+        this.httpServer = null;
+        this.httpsServer.close();
+        this.httpsServer = null;
+        // disableWindowsInternetSettings
+        await this.disableWindowsInternetSettings();
+    }
 }
 
-module.exports = Proxy;
+module.exports = TransparentProxy;
