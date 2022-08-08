@@ -2,5 +2,31 @@
   "dependencies": {
     "mkcert": "^1.5.0",
     "regedit": "^5.1.1"
-  }
+  },
+  "name": "@ndiing/proxy",
+  "description": "<a name=\"module_proxy\"></a>",
+  "version": "1.0.5",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ndiing/proxy.git"
+  },
+  "keywords": [
+    "nodejs",
+    "transparent",
+    "proxy"
+  ],
+  "author": "ndiing",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ndiing/proxy/issues"
+  },
+  "homepage": "https://github.com/ndiing/proxy#readme"
 }
