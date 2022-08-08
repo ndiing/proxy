@@ -1,55 +1,35 @@
 const TransparentProxy = require("../index.js");
 
 // Intercept HTTP requests
-var proxy = new TransparentProxy([
-    {
-        // method, // use regexp pattern, default method=".*"
-        // protocol, // use regexp pattern, default protocol=".*"
-        // hostname: "jsonplaceholder.typicode.com", // use regexp pattern, default hostname=".*"
-        // path, // use regexp pattern, default path=".*"
-        callback: (req, res, next) => {
-            // callback will call twice
-            // on before request
-            // and on before response
+const rules=[
+    // basic rule
+    // rule calling twice on before request and on before response
+    // when req values exist and res null it's mean on before request
+    // when req null and res values exists it's mean on before response
+    { callback(req,res,next){
+        if(req){console.log(req)}
+        if(res){console.log(res)}
+        next()
+    } },
+    // limit something
+    // another rule are
+    // all prop is string regexp
+    // default .*
+    // { method, hostname, path }
+    // example
+    { hostname:'jsonplaceholder.typicode.com',callback(req,res){
+        console.log(req)
+        console.log(res)
+        next()
+    } }
+]
+const proxy = new TransparentProxy(rules);
 
-            // when req exists
-            // it from before request
-            if (req) {
-                // property that can be intercept
-                // req.method
-                // req.protocol
-                // req.hostname
-                // req.port
-                // req.path
-                // req.headers
-                // req.body
-                console.log(req.method,req.path)
-                // console.log(Buffer.concat(req.body||[]).toString());
-            }
+proxy.listen(8888, () => {
+    console.log("proxy listen on port 8888");
+});
 
-            // when res exists
-            // it form before response
-            if (res) {
-                // property that can be intercept
-                // res.status
-                // res.headers
-                // res.body
-                console.log(res.status)
-                // console.log(Buffer.concat(res.body||[]).toString());
-            }
-
-            // when done
-            // resolve with `next()`
-            next();
-        },
-    },
-]);
-
-// proxy.listen(8888, () => {
-//     console.log("proxy listen on port 8888");
-// });
-
-// setTimeout(() => {
-//     proxy.close();
-//     console.log("proxy closed");
-// }, 1000 * 1);
+setTimeout(() => {
+    proxy.close();
+    console.log("proxy closed");
+}, 1000 * 60);

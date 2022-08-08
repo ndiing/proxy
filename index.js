@@ -29,12 +29,12 @@ process.on("unhandledRejection", (err) => {
  *
  */
 class TransparentProxy {
-    routes = [];
+    rules = [];
 
     /**
      *
      */
-    constructor(routes = []) {
+    constructor(rules = []) {
         this.handleClientConnection = this.handleClientConnection.bind(this);
         this.handleClientConnect = this.handleClientConnect.bind(this);
         this.handleClientRequest = this.handleClientRequest.bind(this);
@@ -42,19 +42,19 @@ class TransparentProxy {
         this.handleSocketError = this.handleSocketError.bind(this);
         this.SNICallback = this.SNICallback.bind(this);
 
-        for (let i = 0; i < routes.length; i++) {
-            const route = routes[i];
-            this.add(route);
+        for (let i = 0; i < rules.length; i++) {
+            const rule = rules[i];
+            this.add(rule);
         }
     }
 
-    add(route = {}) {
-        let { method = ".*", protocol = ".*", hostname = ".*", path = ".*", callback = (req, res, next) => next() } = route;
+    add(rule = {}) {
+        let { method = ".*", protocol = ".*", hostname = ".*", path = ".*", callback = (req, res, next) => next() } = rule;
         method = new RegExp(method);
         protocol = new RegExp(protocol);
         hostname = new RegExp(hostname);
         path = new RegExp(path);
-        this.routes.push({ method, protocol, hostname, path, callback });
+        this.rules.push({ method, protocol, hostname, path, callback });
     }
 
     /**
@@ -212,9 +212,9 @@ class TransparentProxy {
 
         let handle;
 
-        // console.log(this.routes);
-        for (let i = 0; i < this.routes.length; i++) {
-            const { method, protocol, hostname, path, callback } = this.routes[i];
+        // console.log(this.rules);
+        for (let i = 0; i < this.rules.length; i++) {
+            const { method, protocol, hostname, path, callback } = this.rules[i];
             const passed =
                 method.test(request.method) && //
                 protocol.test(request.protocol) &&
