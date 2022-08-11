@@ -2,117 +2,90 @@ const http = require("http");
 const https = require("https");
 const net = require("net");
 const tls = require("tls");
-const fs = require("fs");
 const zlib = require("zlib");
+const fs = require("fs");
+// const {pipeline} = require('stream')
+// const events = require("events");
 const { promisify } = require("util");
 const { exec } = require("child_process");
 const mkcert = require("mkcert");
 const regedit = require("regedit").promisified;
+const { URL2, Headers } = require("@ndiing/fetch");
+
+// avoid error
 process.on("uncaughtException", (err) => {
-    console.log(err);
+    console.log(err.message);
 });
 process.on("unhandledRejection", (err) => {
-    console.log(err);
+    console.log(err.message);
 });
 
 /**
- * Nodejs transparent proxy
  * ### Install
  * ```
  * npm install @ndiing/proxy
  * ```
- * @see {@link ./examples/proxy.js}
- * @module proxy
- */
-
-/**
- *
  */
 class TransparentProxy {
     rules = [];
 
     /**
      *
+     * @param {Array} rules
      */
     constructor(rules = []) {
-        this.handleClientConnection = this.handleClientConnection.bind(this);
-        this.handleClientConnect = this.handleClientConnect.bind(this);
-        this.handleClientRequest = this.handleClientRequest.bind(this);
-        this.handleClientError = this.handleClientError.bind(this);
-        this.handleSocketError = this.handleSocketError.bind(this);
         this.SNICallback = this.SNICallback.bind(this);
+        this.handleConnection = this.handleConnection.bind(this);
+        this.handleConnect = this.handleConnect.bind(this);
+        this.handleUpgrade = this.handleUpgrade.bind(this);
+        this.handleRequest = this.handleRequest.bind(this);
+        this.handleError = this.handleError.bind(this);
 
-        for (let i = 0; i < rules.length; i++) {
-            const rule = rules[i];
-            this.add(rule);
+        for (let i = 0; i < http.METHODS.length; i++) {
+            const method = http.METHODS[i];
+
+            this[method.toLowerCase()] = (...args) => {
+                this.add(method, ...args);
+            };
+        }
+
+        for (let j = 0; j < rules.length; j++) {
+            const { method = ".*", url = ".*", callback } = rules[j];
+            this.add({ method, url, callback });
         }
     }
 
-    add(rule = {}) {
-        let { method = ".*", protocol = ".*", hostname = ".*", path = ".*", callback = (req, res, next) => next() } = rule;
-        method = new RegExp(method);
-        protocol = new RegExp(protocol);
-        hostname = new RegExp(hostname);
-        path = new RegExp(path);
-        this.rules.push({ method, protocol, hostname, path, callback });
+    add(method, url, callback) {
+        if (typeof method == "object") {
+            ({ method, url, callback } = method);
+        }
+
+        if (typeof url == "function") {
+            callback = url;
+            url = ".*";
+        }
+
+        url = new RegExp(`^${url}$`, "i");
+        this.rules.push({ method, url, callback });
     }
 
     /**
      *
+     * @param  {String/Function} url
+     * @param  {Function} callback
      */
-    async enableWindowsInternetSettings() {
-        try {
-            await regedit.putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: {
-                        value: 1,
-                        type: "REG_DWORD",
-                    },
-                    ProxyOverride: {
-                        value: "<-loopback>",
-                        type: "REG_SZ",
-                    },
-                    ProxyServer: {
-                        value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`,
-                        type: "REG_SZ",
-                    },
-                },
-            });
-        } catch (error) {}
+    use(...args) {
+        this.add(".*", ...args);
     }
 
     /**
      *
-     */
-    async disableWindowsInternetSettings() {
-        try {
-            await regedit.putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: {
-                        value: 0,
-                        type: "REG_DWORD",
-                    },
-                    ProxyOverride: {
-                        value: "",
-                        type: "REG_SZ",
-                    },
-                    ProxyServer: {
-                        value: "",
-                        type: "REG_SZ",
-                    },
-                },
-            });
-        } catch (error) {}
-    }
-
-    /**
-     *
-     * @param {*} domain
-     * @param {*} ca
-     * @returns {Any}
+     * @param {String} domain
+     * @param {Object} ca
+     * @returns {Object}
      */
     async createCert(domain, ca) {
-        return mkcert.createCert({
+        return await mkcert.createCert({
             domains: ["::1", "127.0.0.1", "localhost", domain],
             validityDays: 365,
             caKey: ca.key,
@@ -122,7 +95,7 @@ class TransparentProxy {
 
     /**
      *
-     * @returns {Any}
+     * @returns {Object}
      */
     async createCA() {
         let ca = {};
@@ -137,236 +110,315 @@ class TransparentProxy {
                 locality: "PACITAN",
                 validityDays: 365,
             });
+
             fs.writeFileSync("./ca.key", ca.key);
             fs.writeFileSync("./ca.crt", ca.cert);
             await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
         }
+
         return ca;
     }
 
     /**
      *
-     * @param {*} socket
      */
-    handleClientConnection(socket) {}
+    async enableProxy() {
+        try {
+            await regedit.putValue({
+                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                    ProxyEnable: {
+                        value: 1,
+                        type: "REG_DWORD",
+                    },
 
-    /**
-     *
-     * @param {*} req
-     * @param {*} socket
-     * @param {*} head
-     */
-    handleClientConnect(req, socket, head) {
-        const socketServer = net.connect(this.httpsServer.address().port, this.hostname, () => {
-            socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
-            socketServer.write(head);
-            socketServer.pipe(socket);
-            socket.pipe(socketServer);
-        });
-        socketServer.on("error", this.handleSocketError);
-        socket.on("error", this.handleSocketError);
-    }
+                    ProxyOverride: {
+                        value: "<-loopback>",
+                        type: "REG_SZ",
+                    },
 
-    /**
-     * @typedef req
-     * @property {String} req.method -
-     * @property {String} req.protocol -
-     * @property {String} req.hostname -
-     * @property {Number} req.port -
-     * @property {String} req.path -
-     * @property {Object} req.headers -
-     * @property {Stream} req.stream -
-     * @property {Buffer} req.body -
-     */
-
-    /**
-     * @typedef res
-     * @property {Number} res.status -
-     * @property {Object} res.headers -
-     * @property {Stream} res.stream -
-     * @property {Buffer} res.body -
-     */
-
-    /**
-     *
-     * @param {*} req
-     * @param {*} res
-     */
-    async handleClientRequest(req, res) {
-        const instance = req.socket.encrypted ? https : http;
-        let [hostname, port] = req.headers.host.split(":");
-        const request = {};
-
-        request.method = req.method;
-        request.protocol = req.socket.encrypted ? "https:" : "http:";
-        request.hostname = hostname;
-        request.port = parseInt(port || (req.socket.encrypted ? 443 : 80));
-        request.path = req.url;
-        request.headers = req.headers;
-        // request.stream = req;
-        request.body = [];
-
-        for await (const chunk of req) {
-            request.body.push(chunk);
+                    ProxyServer: {
+                        value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`,
+                        type: "REG_SZ",
+                    },
+                },
+            });
+        } catch (error) {
+            // console.log(error)
         }
-
-        let handle;
-
-        // console.log(this.rules);
-        for (let i = 0; i < this.rules.length; i++) {
-            const { method, protocol, hostname, path, callback } = this.rules[i];
-            const passed =
-                method.test(request.method) && //
-                protocol.test(request.protocol) &&
-                hostname.test(request.hostname) &&
-                path.test(request.path);
-            if (passed) {
-                handle = callback;
-                break;
-            }
-        }
-
-        if (handle) {
-            await new Promise((resolve) => handle(request, null, () => resolve()));
-        }
-
-        const reqServer = instance.request(request, async (resServer) => {
-            const contentEncoding = resServer.headers["content-encoding"];
-            let readStream = resServer;
-
-            if (/\bdeflate\b/.test(contentEncoding)) {
-                readStream = zlib.createInflate();
-            } else if (/\bgzip\b/.test(contentEncoding)) {
-                readStream = zlib.createGunzip();
-            } else if (/\bbr\b/.test(contentEncoding)) {
-                readStream = zlib.createBrotliDecompress();
-            }
-
-            if (readStream !== resServer) {
-                resServer.pipe(readStream);
-            }
-            const response = {};
-            response.status = resServer.statusCode;
-            response.headers = resServer.headers;
-            // response.stream = resServer;
-            response.body = [];
-
-            for await (const chunk of readStream) {
-                response.body.push(chunk);
-            }
-
-            if (handle) {
-                await new Promise((resolve) => handle(null, response, () => resolve()));
-            }
-
-            res.writeHead(response.status, response.headers);
-
-            let writeStream = res;
-
-            if (/\bdeflate\b/.test(contentEncoding)) {
-                writeStream = zlib.createDeflate();
-            } else if (/\bgzip\b/.test(contentEncoding)) {
-                writeStream = zlib.createGzip();
-            } else if (/\bbr\b/.test(contentEncoding)) {
-                writeStream = zlib.createBrotliCompress();
-            }
-
-            if (writeStream !== res) {
-                writeStream.pipe(res);
-            }
-
-            if (response.body) {
-                response.body = Buffer.concat(response.body);
-                writeStream.write(response.body);
-            }
-            writeStream.end();
-        });
-
-        if (request.body) {
-            request.body = Buffer.concat(request.body);
-            reqServer.write(request.body);
-        }
-        reqServer.end();
     }
 
     /**
      *
-     * @param {*} err
      */
-    handleClientError(err) {}
+    async disableProxy() {
+        try {
+            await regedit.putValue({
+                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                    ProxyEnable: {
+                        value: 0,
+                        type: "REG_DWORD",
+                    },
+
+                    ProxyOverride: {
+                        value: "",
+                        type: "REG_SZ",
+                    },
+
+                    ProxyServer: {
+                        value: "",
+                        type: "REG_SZ",
+                    },
+                },
+            });
+        } catch (error) {
+            // console.log(error)
+        }
+    }
+
+    ctx = {};
 
     /**
      *
-     * @param {*} err
-     */
-    handleSocketError(err) {}
-
-    /**
-     *
-     * @param {*} servername
-     * @param {*} cb
+     * @param {String} servername
+     * @param {Function} cb
      */
     async SNICallback(servername, cb) {
-        const err = null;
-        let ctx;
-
-        if (!this.ctx) {
-            this.ctx = {};
-        }
-
+        let err = null;
+        let ctx = null;
         if (this.ctx[servername]) {
             ctx = this.ctx[servername];
         } else {
-            // createCA
             const ca = await this.createCA();
-            // createCert
             const cert = await this.createCert(servername, ca);
-            // createSecureContext
             ctx = tls.createSecureContext(cert);
             this.ctx[servername] = ctx;
         }
+
         cb(err, ctx);
     }
 
     /**
      *
-     * @param {*} port
-     * @param {*} hostname
-     * @param {*} backlog
+     * @param {Stream} socket
+     */
+    handleConnection(socket) {
+        // socket.on("data", (chunk) => {
+        //     let data = "" + chunk;
+        //     if (data.indexOf("CONNECT") !== -1) {
+        //         console.log(data);
+        //     }
+        // });
+    }
+
+    /**
+     *
+     * @param {Stream} req
+     * @param {Stream} socket
+     * @param {Stream} head
+     */
+    handleConnect(req, socket, head) {
+        const serverSocket = net.connect(this.https.address().port, this.hostname, () => {
+            socket.write(
+                "HTTP/1.1 200 Connection Established\r\n" +
+                    // 'Proxy-agent: Node.js-Proxy\r\n' +
+                    "\r\n"
+            );
+            serverSocket.write(head);
+            serverSocket.pipe(socket);
+            socket.pipe(serverSocket);
+        });
+
+        serverSocket.on("error", this.handleError);
+        socket.on("error", this.handleError);
+    }
+
+    /**
+     *
+     * @param {Stream} req
+     * @param {Stream} socket
+     * @param {Stream} head
+     */
+    handleUpgrade(req, socket, head) {
+        socket.write(
+            "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
+                "Upgrade: WebSocket\r\n" + //
+                "Connection: Upgrade\r\n" +
+                "\r\n"
+        );
+        socket.pipe(socket); // echo back
+        socket.on("error", this.handleError);
+    }
+
+    /**
+     *
+     * @param {Stream} req
+     * @param {Stream} res
+     */
+    async handleRequest(req, res) {
+        let request = new URL2(req.url, (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host);
+        request.method = req.method;
+        request.headers = req.headers;
+        const protocol = request.protocol == "https:" ? https : http;
+
+        let callback;
+        for (let i = 0; i < this.rules.length; i++) {
+            const rule = this.rules[i];
+            const passed = (rule.method == ".*" || rule.method == request.method) && rule.url.test(request.href);
+
+            if (passed) {
+                callback = rule.callback;
+                break;
+            }
+        }
+
+        if (callback) {
+            request = await new Promise(async (resolve) => {
+                request.body = await new Promise((resolve) => {
+                    const buffer = [];
+                    req.on("data", (chunk) => {
+                        buffer.push(chunk);
+                    });
+                    req.on("end", () => {
+                        resolve(Buffer.concat(buffer).toString());
+                    });
+                });
+
+                callback(request, null, () => resolve(request));
+            });
+        }
+
+        const reqServer = protocol.request(request);
+        reqServer.on("response", async (resServer) => {
+            let response = {};
+            response.status = resServer.statusCode;
+            response.headers = resServer.headers;
+
+            if (callback) {
+                let readableStream;
+                if (resServer.headers["content-encoding"] == "gzip") {
+                    readableStream = zlib.createGunzip();
+                } else if (resServer.headers["content-encoding"] == "deflate") {
+                    readableStream = zlib.createInflate();
+                } else if (resServer.headers["content-encoding"] == "br") {
+                    readableStream = zlib.createBrotliDecompress();
+                }
+
+                if (readableStream) {
+                    resServer.pipe(readableStream);
+                }
+
+                const readable = readableStream || resServer;
+
+                response = await new Promise(async (resolve) => {
+                    response.body = await new Promise((resolve) => {
+                        const buffer = [];
+                        readable.on("data", (chunk) => {
+                            buffer.push(chunk);
+                        });
+                        readable.on("end", () => {
+                            resolve(Buffer.concat(buffer).toString());
+                        });
+                    });
+
+                    callback(null, response, () => resolve(response));
+                });
+            }
+
+            res.writeHead(response.status, response.headers);
+
+            if (callback && response.body) {
+                let writableStream;
+                if (resServer.headers["content-encoding"] == "gzip") {
+                    writableStream = zlib.createGzip();
+                } else if (resServer.headers["content-encoding"] == "deflate") {
+                    writableStream = zlib.createDeflate();
+                } else if (resServer.headers["content-encoding"] == "br") {
+                    writableStream = zlib.createBrotliCompress();
+                }
+
+                if (writableStream) {
+                    writableStream.pipe(res);
+                }
+
+                const writable = writableStream || res;
+
+                response.body = Buffer.from(response.body);
+                writable.write(response.body);
+                writable.end();
+            } else {
+                resServer.pipe(res);
+            }
+        });
+
+        req.on("error", this.handleError);
+
+        if (callback && request.body) {
+            request.body = Buffer.from(request.body);
+            reqServer.write(request.body);
+            reqServer.end();
+        } else {
+            req.pipe(reqServer);
+        }
+    }
+
+    /**
+     *
+     * @param {Object} err
+     */
+    handleError(err) {
+        console.log(err.message);
+    }
+
+    /**
+     *
+     * @param {Number} port
+     * @param {String/Function} hostname
+     * @param {Function} backlog
      * @returns {Object}
      */
     async listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
-            hostname = "127.0.0.1";
+            hostname = "";
         }
-        this.port = port;
-        this.hostname = hostname;
-        // enableWindowsInternetSettings
-        await this.enableWindowsInternetSettings();
-        // httpServer
-        this.httpServer = http.createServer().listen(this.port, this.hostname, backlog);
-        this.httpServer.on("connection", this.handleClientConnection);
-        this.httpServer.on("connect", this.handleClientConnect);
-        this.httpServer.on("request", this.handleClientRequest);
-        this.httpServer.on("error", this.handleClientError);
-        // httpsServer
-        this.httpsServer = https.createServer({ SNICallback: this.SNICallback }).listen(0, hostname);
-        this.httpsServer.on("request", this.handleClientRequest);
-        this.httpsServer.on("error", this.handleClientError);
-        return this.httpServer;
+
+        this.port = port || 8888;
+        this.hostname = hostname || "127.0.0.1";
+
+        await this.enableProxy();
+
+        this.http = http.createServer().listen(this.port, this.hostname, backlog);
+
+        let SNICallback = this.SNICallback;
+
+        this.https = https.createServer({ SNICallback }).listen(0, this.hostname);
+
+        this.http.on("connection", this.handleConnection);
+        this.http.on("connect", this.handleConnect);
+        this.http.on("upgrade", this.handleUpgrade);
+        this.http.on("request", this.handleRequest);
+        this.http.on("error", this.handleError);
+
+        // this.https.on('connection', this.handleConnection)
+        // this.https.on('connect', this.handleConnect)
+        // this.https.on('upgrade', this.handleUpgrade)
+        this.https.on("request", this.handleRequest);
+        this.https.on("error", this.handleError);
+
+        return this.http;
     }
 
     /**
      *
      */
     async close() {
-        this.httpServer.close();
-        this.httpServer = null;
-        this.httpsServer.close();
-        this.httpsServer = null;
-        // disableWindowsInternetSettings
-        await this.disableWindowsInternetSettings();
+        this.http.close();
+        this.https.close();
+
+        this.http = null;
+        this.https = null;
+
+        await this.disableProxy();
     }
 }
 
