@@ -4,8 +4,8 @@ const net = require("net");
 const tls = require("tls");
 const zlib = require("zlib");
 const fs = require("fs");
-// const {pipeline} = require('stream')
-// const events = require("events");
+const { Readable, PassThrough } = require("stream");
+const events = require("events");
 const { promisify } = require("util");
 const { exec } = require("child_process");
 const mkcert = require("mkcert");
@@ -14,10 +14,10 @@ const { URL2, Headers } = require("@ndiing/fetch");
 
 // avoid error
 process.on("uncaughtException", (err) => {
-    console.log(err.message);
+    console.log(err);
 });
 process.on("unhandledRejection", (err) => {
-    console.log(err.message);
+    console.log(err);
 });
 
 /**
@@ -25,9 +25,135 @@ process.on("unhandledRejection", (err) => {
  * ```
  * npm install @ndiing/proxy
  * ```
+ * @module proxy
+ */
+
+/**
+ * EventEmitter with regexp
+ */
+class EventEmitter extends events {
+    /**
+     *
+     * @param {String/RegExp} eventName
+     * @param {Function} listener
+     */
+    on(eventName, listener) {
+        super.on(eventName.source || eventName, listener);
+    }
+
+    /**
+     *
+     * @param {String} eventName
+     * @param  {...any} args
+     */
+    emit(eventName, ...args) {
+        super.emit(eventName, ...args);
+        for (const _eventName in this._events) {
+            if (new RegExp(_eventName).test(eventName) && _eventName !== eventName) {
+                super.emit(_eventName, eventName, ...args);
+            }
+        }
+    }
+}
+
+// const ee = new EventEmitter();
+// ee.on("book", console.log);
+// ee.on(".*", console.log);
+// ee.emit("book", "ge the book");
+
+/**
+ *
+ */
+class Store extends EventEmitter {
+    _id = -1;
+
+    /**
+     *
+     */
+    get id() {
+        return ++this._id;
+    }
+
+    /**
+     *
+     */
+    data = [];
+
+    /**
+     *
+     * @param {Object} doc
+     * @returns {Object}
+     */
+    post(doc = {}) {
+        doc._id = this.id;
+        this.data[doc._id] = doc;
+        return { _id: doc._id, ok: true };
+    }
+
+    /**
+     *
+     * @param {Number} _id
+     * @returns {Object}
+     */
+    get(_id) {
+        return this.data[_id];
+    }
+
+    /**
+     *
+     * @param {Number} _id
+     * @param {Object} doc
+     * @returns {Object}
+     */
+    patch(_id, doc = {}) {
+        let old = this.get(_id);
+        if (old) {
+            for (const name in doc) {
+                if (name == "_id") {
+                    continue;
+                }
+
+                // store,0,request
+                // store,0,response
+                let value = doc[name];
+                this.emit("" + [this.constructor.name, _id, name], value);
+                old[name] = value;
+            }
+
+            // store,0
+            this.emit("" + [this.constructor.name, _id], old);
+
+            return { _id, ok: true };
+        }
+
+        return { _id, ok: false };
+    }
+
+    /**
+     *
+     * @param {Number} _id
+     * @returns {Object}
+     */
+    delete(_id) {
+        let old = this.get(_id);
+        this.data[_id] = null;
+        return { _id, ok: !!old };
+    }
+}
+
+/**
+ *
  */
 class TransparentProxy {
+    /**
+     *
+     */
     rules = [];
+
+    /**
+     *
+     */
+    store = new Store();
 
     /**
      *
@@ -255,110 +381,124 @@ class TransparentProxy {
      * @param {Stream} res
      */
     async handleRequest(req, res) {
-        let request = new URL2(req.url, (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host);
-        request.method = req.method;
-        request.headers = req.headers;
-        const protocol = request.protocol == "https:" ? https : http;
+        const base = (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host;
+        const input = new URL2(req.url, base);
+
+        let request = {
+            ...input,
+            method: req.method,
+            headers: new Headers(req.headers),
+            body: req,
+        };
 
         let callback;
+
         for (let i = 0; i < this.rules.length; i++) {
             const rule = this.rules[i];
             const passed = (rule.method == ".*" || rule.method == request.method) && rule.url.test(request.href);
-
             if (passed) {
                 callback = rule.callback;
                 break;
             }
         }
 
-        if (callback) {
-            request = await new Promise(async (resolve) => {
-                request.body = await new Promise((resolve) => {
-                    const buffer = [];
-                    req.on("data", (chunk) => {
-                        buffer.push(chunk);
-                    });
-                    req.on("end", () => {
-                        resolve(Buffer.concat(buffer).toString());
-                    });
-                });
+        let readable = request.body;
+        const doc = this.store.post();
 
-                callback(request, null, () => resolve(request));
+        const buffer = [];
+        readable.on("data", (chunk) => {
+            buffer.push(chunk);
+        });
+        readable.on("end", () => {
+            request.body = Buffer.concat(buffer);
+            this.store.patch(doc._id, { request });
+        });
+
+        if (callback) {
+            // block request
+            request = await new Promise(async (resolve) => {
+                request = await new Promise((resolve) => {
+                    this.store.once("" + ["Store", doc._id, "request"], resolve);
+                });
+                callback(request, null, () => {
+                    resolve(request);
+                });
             });
         }
 
+        if (!(request.body instanceof Readable)) {
+            readable = new Readable();
+            readable.push(request.body);
+            readable.push(null);
+
+            request.body = readable;
+        }
+
+        const protocol = input.protocol == "https:" ? https : http;
+
         const reqServer = protocol.request(request);
         reqServer.on("response", async (resServer) => {
-            let response = {};
-            response.status = resServer.statusCode;
-            response.headers = resServer.headers;
+            let response = {
+                status: resServer.statusCode,
+                headers: new Headers(resServer.headers),
+                body: resServer,
+            };
+
+            let readable = response.body;
+            const encoding = response.headers.get("content-encoding");
+
+            if (encoding == "gzip") {
+                readable = response.body.pipe(zlib.createGunzip());
+            } else if (encoding == "deflate") {
+                readable = response.body.pipe(zlib.createInflate());
+            } else if (encoding == "br") {
+                readable = response.body.pipe(zlib.createBrotliDecompress());
+            }
+
+            const buffer = [];
+            readable.on("data", (chunk) => {
+                buffer.push(chunk);
+            });
+            readable.on("end", () => {
+                response.body = Buffer.concat(buffer);
+                this.store.patch(doc._id, { response });
+            });
 
             if (callback) {
-                let readableStream;
-                if (resServer.headers["content-encoding"] == "gzip") {
-                    readableStream = zlib.createGunzip();
-                } else if (resServer.headers["content-encoding"] == "deflate") {
-                    readableStream = zlib.createInflate();
-                } else if (resServer.headers["content-encoding"] == "br") {
-                    readableStream = zlib.createBrotliDecompress();
-                }
-
-                if (readableStream) {
-                    resServer.pipe(readableStream);
-                }
-
-                const readable = readableStream || resServer;
-
+                // block response
                 response = await new Promise(async (resolve) => {
-                    response.body = await new Promise((resolve) => {
-                        const buffer = [];
-                        readable.on("data", (chunk) => {
-                            buffer.push(chunk);
-                        });
-                        readable.on("end", () => {
-                            resolve(Buffer.concat(buffer).toString());
-                        });
+                    response = await new Promise((resolve) => {
+                        this.store.once("" + ["Store", doc._id, "response"], resolve);
                     });
-
-                    callback(null, response, () => resolve(response));
+                    callback(null, response, () => {
+                        resolve(response);
+                    });
                 });
             }
 
-            res.writeHead(response.status, response.headers);
+            if (!(response.body instanceof Readable)) {
+                readable = new Readable();
+                readable.push(response.body);
+                readable.push(null);
 
-            if (callback && response.body) {
-                let writableStream;
-                if (resServer.headers["content-encoding"] == "gzip") {
-                    writableStream = zlib.createGzip();
-                } else if (resServer.headers["content-encoding"] == "deflate") {
-                    writableStream = zlib.createDeflate();
-                } else if (resServer.headers["content-encoding"] == "br") {
-                    writableStream = zlib.createBrotliCompress();
+                response.body = readable;
+
+                if (encoding == "gzip") {
+                    readable = response.body.pipe(zlib.createGzip());
+                } else if (encoding == "deflate") {
+                    readable = response.body.pipe(zlib.createDeflate());
+                } else if (encoding == "br") {
+                    readable = response.body.pipe(zlib.createBrotliCompress());
                 }
 
-                if (writableStream) {
-                    writableStream.pipe(res);
-                }
-
-                const writable = writableStream || res;
-
-                response.body = Buffer.from(response.body);
-                writable.write(response.body);
-                writable.end();
-            } else {
-                resServer.pipe(res);
+                response.body = readable;
             }
+
+            res.writeHead(response.status, response.headers.entries());
+            response.body.pipe(res);
         });
 
-        req.on("error", this.handleError);
-
-        if (callback && request.body) {
-            request.body = Buffer.from(request.body);
-            reqServer.write(request.body);
-            reqServer.end();
-        } else {
-            req.pipe(reqServer);
-        }
+        request.body.pipe(reqServer);
     }
 
     /**
@@ -366,7 +506,7 @@ class TransparentProxy {
      * @param {Object} err
      */
     handleError(err) {
-        console.log(err.message);
+        console.log(err);
     }
 
     /**
@@ -399,9 +539,9 @@ class TransparentProxy {
         this.http.on("request", this.handleRequest);
         this.http.on("error", this.handleError);
 
-        // this.https.on('connection', this.handleConnection)
-        // this.https.on('connect', this.handleConnect)
-        // this.https.on('upgrade', this.handleUpgrade)
+        this.https.on("connection", this.handleConnection);
+        this.https.on("connect", this.handleConnect);
+        this.https.on("upgrade", this.handleUpgrade);
         this.https.on("request", this.handleRequest);
         this.https.on("error", this.handleError);
 
@@ -422,4 +562,6 @@ class TransparentProxy {
     }
 }
 
+TransparentProxy.EventEmitter = EventEmitter;
+TransparentProxy.Store = Store;
 module.exports = TransparentProxy;
