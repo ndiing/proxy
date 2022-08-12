@@ -34,9 +34,9 @@ proxy.use('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {
 //     next()
 // })
 
-proxy.listen(8888, () => {
-    console.log('proxy listen on port 8888')
-})
+// proxy.listen(8888, () => {
+//     console.log('proxy listen on port 8888')
+// })
 
 // setTimeout(() => {
 //     // stop proxy
