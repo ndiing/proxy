@@ -11,14 +11,13 @@
     * [~Store](#module_proxy..Store)
         * [.id](#module_proxy..Store+id)
         * [.data](#module_proxy..Store+data)
-        * [.post(doc)](#module_proxy..Store+post) ⇒ <code>Object</code>
-        * [.get(_id)](#module_proxy..Store+get) ⇒ <code>Object</code>
-        * [.patch(_id, doc)](#module_proxy..Store+patch) ⇒ <code>Object</code>
-        * [.delete(_id)](#module_proxy..Store+delete) ⇒ <code>Object</code>
+        * [.create(doc)](#module_proxy..Store+create) ⇒ <code>Object</code>
+        * [.read(_id)](#module_proxy..Store+read) ⇒ <code>Object</code>
+        * [.update(_id, doc)](#module_proxy..Store+update) ⇒ <code>Object</code>
+        * [.destroy(_id)](#module_proxy..Store+destroy) ⇒ <code>Object</code>
     * [~TransparentProxy](#module_proxy..TransparentProxy)
         * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
         * [.rules](#module_proxy..TransparentProxy+rules)
-        * [.store](#module_proxy..TransparentProxy+store)
         * [.use(url, callback)](#module_proxy..TransparentProxy+use)
         * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
         * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
@@ -72,10 +71,10 @@ EventEmitter with regexp
 * [~Store](#module_proxy..Store)
     * [.id](#module_proxy..Store+id)
     * [.data](#module_proxy..Store+data)
-    * [.post(doc)](#module_proxy..Store+post) ⇒ <code>Object</code>
-    * [.get(_id)](#module_proxy..Store+get) ⇒ <code>Object</code>
-    * [.patch(_id, doc)](#module_proxy..Store+patch) ⇒ <code>Object</code>
-    * [.delete(_id)](#module_proxy..Store+delete) ⇒ <code>Object</code>
+    * [.create(doc)](#module_proxy..Store+create) ⇒ <code>Object</code>
+    * [.read(_id)](#module_proxy..Store+read) ⇒ <code>Object</code>
+    * [.update(_id, doc)](#module_proxy..Store+update) ⇒ <code>Object</code>
+    * [.destroy(_id)](#module_proxy..Store+destroy) ⇒ <code>Object</code>
 
 <a name="module_proxy..Store+id"></a>
 
@@ -85,27 +84,27 @@ EventEmitter with regexp
 
 #### store.data
 **Kind**: instance property of [<code>Store</code>](#module_proxy..Store)  
-<a name="module_proxy..Store+post"></a>
+<a name="module_proxy..Store+create"></a>
 
-#### store.post(doc) ⇒ <code>Object</code>
+#### store.create(doc) ⇒ <code>Object</code>
 **Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
 
 | Param | Type |
 | --- | --- |
 | doc | <code>Object</code> | 
 
-<a name="module_proxy..Store+get"></a>
+<a name="module_proxy..Store+read"></a>
 
-#### store.get(_id) ⇒ <code>Object</code>
+#### store.read(_id) ⇒ <code>Object</code>
 **Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
 
 | Param | Type |
 | --- | --- |
 | _id | <code>Number</code> | 
 
-<a name="module_proxy..Store+patch"></a>
+<a name="module_proxy..Store+update"></a>
 
-#### store.patch(_id, doc) ⇒ <code>Object</code>
+#### store.update(_id, doc) ⇒ <code>Object</code>
 **Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
 
 | Param | Type |
@@ -113,9 +112,9 @@ EventEmitter with regexp
 | _id | <code>Number</code> | 
 | doc | <code>Object</code> | 
 
-<a name="module_proxy..Store+delete"></a>
+<a name="module_proxy..Store+destroy"></a>
 
-#### store.delete(_id) ⇒ <code>Object</code>
+#### store.destroy(_id) ⇒ <code>Object</code>
 **Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
 
 | Param | Type |
@@ -130,7 +129,6 @@ EventEmitter with regexp
 * [~TransparentProxy](#module_proxy..TransparentProxy)
     * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
     * [.rules](#module_proxy..TransparentProxy+rules)
-    * [.store](#module_proxy..TransparentProxy+store)
     * [.use(url, callback)](#module_proxy..TransparentProxy+use)
     * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
     * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
@@ -156,10 +154,6 @@ EventEmitter with regexp
 <a name="module_proxy..TransparentProxy+rules"></a>
 
 #### transparentProxy.rules
-**Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
-<a name="module_proxy..TransparentProxy+store"></a>
-
-#### transparentProxy.store
 **Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 <a name="module_proxy..TransparentProxy+use"></a>
 

@@ -84,7 +84,7 @@ class Store extends EventEmitter {
      * @param {Object} doc
      * @returns {Object}
      */
-    post(doc = {}) {
+    create(doc = {}) {
         doc._id = this.id;
         this.data[doc._id] = doc;
         return { _id: doc._id, ok: true };
@@ -95,7 +95,7 @@ class Store extends EventEmitter {
      * @param {Number} _id
      * @returns {Object}
      */
-    get(_id) {
+    read(_id) {
         return this.data[_id];
     }
 
@@ -105,8 +105,8 @@ class Store extends EventEmitter {
      * @param {Object} doc
      * @returns {Object}
      */
-    patch(_id, doc = {}) {
-        let old = this.get(_id);
+    update(_id, doc = {}) {
+        let old = this.read(_id);
         if (old) {
             for (const name in doc) {
                 if (name == "_id") {
@@ -116,12 +116,12 @@ class Store extends EventEmitter {
                 // store,0,request
                 // store,0,response
                 let value = doc[name];
-                this.emit("" + [this.constructor.name, _id, name], value);
+                this.emit("" + ['doc', _id, name], value);
                 old[name] = value;
             }
 
             // store,0
-            this.emit("" + [this.constructor.name, _id], old);
+            this.emit("" + ['doc', _id], old);
 
             return { _id, ok: true };
         }
@@ -134,8 +134,8 @@ class Store extends EventEmitter {
      * @param {Number} _id
      * @returns {Object}
      */
-    delete(_id) {
-        let old = this.get(_id);
+    destroy(_id) {
+        let old = this.read(_id);
         this.data[_id] = null;
         return { _id, ok: !!old };
     }
@@ -144,7 +144,7 @@ class Store extends EventEmitter {
 /**
  *
  */
-class TransparentProxy {
+class TransparentProxy extends Store {
     /**
      *
      */
@@ -152,14 +152,10 @@ class TransparentProxy {
 
     /**
      *
-     */
-    store = new Store();
-
-    /**
-     *
      * @param {Array} rules
      */
     constructor(rules = []) {
+        super()
         this.SNICallback = this.SNICallback.bind(this);
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
@@ -403,7 +399,7 @@ class TransparentProxy {
         }
 
         let readable = request.body;
-        const doc = this.store.post();
+        const doc = this.create();
 
         const buffer = [];
         readable.on("data", (chunk) => {
@@ -411,14 +407,14 @@ class TransparentProxy {
         });
         readable.on("end", () => {
             request.body = Buffer.concat(buffer);
-            this.store.patch(doc._id, { request });
+            this.update(doc._id, { request });
         });
 
         if (callback) {
             // block request
             request = await new Promise(async (resolve) => {
                 request = await new Promise((resolve) => {
-                    this.store.once("" + ["Store", doc._id, "request"], resolve);
+                    this.once("" + ["doc", doc._id, "request"], resolve);
                 });
                 callback(request, null, () => {
                     resolve(request);
@@ -461,14 +457,14 @@ class TransparentProxy {
             });
             readable.on("end", () => {
                 response.body = Buffer.concat(buffer);
-                this.store.patch(doc._id, { response });
+                this.update(doc._id, { response });
             });
 
             if (callback) {
                 // block response
                 response = await new Promise(async (resolve) => {
                     response = await new Promise((resolve) => {
-                        this.store.once("" + ["Store", doc._id, "response"], resolve);
+                        this.once("" + ["doc", doc._id, "response"], resolve);
                     });
                     callback(null, response, () => {
                         resolve(response);

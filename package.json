@@ -6,7 +6,7 @@
   },
   "name": "@ndiing/proxy",
   "description": "<a name=\"TransparentProxy\"></a>",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "main": "index.js",
   "devDependencies": {},
   "scripts": {
