@@ -1,48 +1,52 @@
 const TransparentProxy = require("./index");
 
 const proxy = new TransparentProxy();
-// proxy.on(/(request|response)$/, (eventName, doc) => {
-//     // doc=request/response
-//     console.log(doc);
+
+// // get only request
+// proxy.store.on(/doc,\d+,request/, (eventName, doc) => {
+//     console.log(doc)
+// })
+
+// // get only response
+// proxy.store.on(/doc,\d+,response/, (eventName, doc) => {})
+
+// // get all request & response
+// proxy.store.on(/doc,\d+/, (eventName, doc) => {
+//     console.log(eventName)
+// })
+
+// // intercept all request & response
+// proxy.use((req,res,next) => {next()})
+
+// // intercept request & response with url
+// proxy.use(/https:\/\/jsonplaceholder.typicode.com.*/, (req, res, next) => {
+//     // // before request
+//     // console.log(req)
+
+//     // // before response
+//     // console.log(res)
+
+//     next();
 // });
 
-// // callback
-// // call twice
-// // on beforeRequest and on beforeResponse
-proxy.use('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {
-    // when not null
-    // indicate beforeRequest
-    if(req){
-        req.headers.delete('if-none-match')
-    }
-    // when not null
-    // indicate beforeResponse
-    if(res){
-        res.headers.set('x-powered-by','ndiing')
-        res.body=JSON.parse(res.body)
-        res.body=JSON.stringify(res.body)
-        res.body=JSON.stringify([])
-    }
-    next()
-})
-
-// proxy.use('https://www.youtube.com/.*', (req,res,next) => {
-//     if(req){}
-//     if(res){
-//         res.body='Hello YouTube'
+// // intercept request & response with url & method
+// proxy.get("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {
+//     if(req){
+//         req.headers.delete('if-none-match')
 //     }
-//     next()
-// })
+//     if(res){
+//         res.body = JSON.stringify([{id:1,title:'intercepting response'}])
+//     }
+//     next();
+// });
 
+// // start proxy
 // proxy.listen(8888, () => {
-//     console.log('proxy listen on port 8888')
-// })
+//     console.log('proxy started')
+// });
 
+// // stop proxy
 // setTimeout(() => {
-//     // stop proxy
-//     proxy.close()
+//     proxy.close();
 //     console.log('proxy stopped')
-// }, 1000+1)
-
-// http=127.0.0.1:8888;https=127.0.0.1:8888;ftp=127.0.0.1:8888
-
+// }, 1000 * 1);

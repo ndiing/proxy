@@ -4,20 +4,21 @@ const net = require("net");
 const tls = require("tls");
 const zlib = require("zlib");
 const fs = require("fs");
-const { Readable, PassThrough } = require("stream");
+const { Readable } = require("stream");
 const events = require("events");
 const { promisify } = require("util");
 const { exec } = require("child_process");
 const mkcert = require("mkcert");
 const regedit = require("regedit").promisified;
 const { URL2, Headers } = require("@ndiing/fetch");
+const Crypto = require("@ndiing/crypto");
 
 // avoid error
 process.on("uncaughtException", (err) => {
-    console.log(err);
+    console.log("uncaughtException", err);
 });
 process.on("unhandledRejection", (err) => {
-    console.log(err);
+    console.log("unhandledRejection", err);
 });
 
 /**
@@ -55,11 +56,6 @@ class EventEmitter extends events {
         }
     }
 }
-
-// const ee = new EventEmitter();
-// ee.on("book", console.log);
-// ee.on(".*", console.log);
-// ee.emit("book", "ge the book");
 
 /**
  *
@@ -116,12 +112,12 @@ class Store extends EventEmitter {
                 // store,0,request
                 // store,0,response
                 let value = doc[name];
-                this.emit("" + ["doc", _id, name], value);
+                this.emit(`doc,${_id},${name}`, value);
                 old[name] = value;
             }
 
             // store,0
-            this.emit("" + ["doc", _id], old);
+            this.emit(`doc,${_id}`, old);
 
             return { _id, ok: true };
         }
@@ -144,7 +140,7 @@ class Store extends EventEmitter {
 /**
  *
  */
-class TransparentProxy extends Store {
+class TransparentProxy {
     /**
      *
      */
@@ -152,10 +148,14 @@ class TransparentProxy extends Store {
 
     /**
      *
+     */
+    store = new Store();
+
+    /**
+     *
      * @param {Array} rules
      */
     constructor(rules = []) {
-        super();
         this.SNICallback = this.SNICallback.bind(this);
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
@@ -187,7 +187,7 @@ class TransparentProxy extends Store {
             url = ".*";
         }
 
-        url = new RegExp(`^${url}$`, "i");
+        url = new RegExp(`^${url.source || url}$`, "i");
         this.rules.push({ method, url, callback });
     }
 
@@ -246,27 +246,8 @@ class TransparentProxy extends Store {
      */
     async enableProxy() {
         try {
-            await regedit.putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: {
-                        value: 1,
-                        type: "REG_DWORD",
-                    },
-
-                    ProxyOverride: {
-                        value: "<-loopback>",
-                        type: "REG_SZ",
-                    },
-
-                    ProxyServer: {
-                        value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`,
-                        type: "REG_SZ",
-                    },
-                },
-            });
-        } catch (error) {
-            // console.log(error)
-        }
+            await regedit.putValue({ "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": { ProxyEnable: { value: 1, type: "REG_DWORD" }, ProxyOverride: { value: "<-loopback>", type: "REG_SZ" }, ProxyServer: { value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`, type: "REG_SZ" } } });
+        } catch (error) {}
     }
 
     /**
@@ -274,27 +255,8 @@ class TransparentProxy extends Store {
      */
     async disableProxy() {
         try {
-            await regedit.putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: {
-                        value: 0,
-                        type: "REG_DWORD",
-                    },
-
-                    ProxyOverride: {
-                        value: "",
-                        type: "REG_SZ",
-                    },
-
-                    ProxyServer: {
-                        value: "",
-                        type: "REG_SZ",
-                    },
-                },
-            });
-        } catch (error) {
-            // console.log(error)
-        }
+            await regedit.putValue({ "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": { ProxyEnable: { value: 0, type: "REG_DWORD" }, ProxyOverride: { value: "", type: "REG_SZ" }, ProxyServer: { value: "", type: "REG_SZ" } } });
+        } catch (error) {}
     }
 
     ctx = {};
@@ -332,12 +294,13 @@ class TransparentProxy extends Store {
      * @param {Stream} head
      */
     handleConnect(req, socket, head) {
+        this.store.create({ request: { method: req.method, url: req.url, headers: req.headers } });
+
         const serverSocket = net.connect(this.https.address().port, this.hostname, () => {
-            socket.write(
-                "HTTP/1.1 200 Connection Established\r\n" + //
-                    // "Proxy-agent: Node.js-Proxy\r\n" +
-                    "\r\n"
-            );
+            let message = "";
+            message += `HTTP/1.1 200 Connection Established\r\n`;
+            message += "\r\n";
+            socket.write(message);
             serverSocket.write(head);
             serverSocket.pipe(socket);
             socket.pipe(serverSocket);
@@ -353,7 +316,26 @@ class TransparentProxy extends Store {
      * @param {Stream} socket
      * @param {Stream} head
      */
-    handleUpgrade(req, socket, head) {}
+    handleUpgrade(req, socket, head) {
+        // https://www.rfc-editor.org/rfc/rfc6455#section-1.2
+        // 258EAFA5-E914-47DA-95CA-C5AB0DC85B11
+        this.store.create({ request: { method: req.method, url: req.url, headers: req.headers } });
+
+        const hash = Crypto.hash(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", {
+            algorithm: "sha1",
+            encoding: "base64",
+        });
+
+        let message = "";
+        message += `HTTP/1.1 101 Switching Protocols\r\n`;
+        message += `Upgrade: websocket\r\n`;
+        message += `Sec-WebSocket-Accept: ${hash}\r\n`;
+        message += `Connection: Upgrade\r\n`;
+        message += "\r\n";
+        socket.write(message);
+        socket.pipe(socket);
+        socket.on("error", this.handleError);
+    }
 
     /**
      *
@@ -371,6 +353,12 @@ class TransparentProxy extends Store {
             body: req,
         };
 
+        // // raw
+        // console.log(
+        //     `${request.method} ${''+input} HTTP/${req.httpVersion}\r\n`+
+        //     ''+request.headers
+        // )
+
         let callback;
 
         for (let i = 0; i < this.rules.length; i++) {
@@ -383,7 +371,7 @@ class TransparentProxy extends Store {
         }
 
         let readable = request.body;
-        const doc = this.create();
+        const doc = this.store.create();
 
         const buffer = [];
         readable.on("data", (chunk) => {
@@ -391,14 +379,14 @@ class TransparentProxy extends Store {
         });
         readable.on("end", () => {
             request.body = Buffer.concat(buffer);
-            this.update(doc._id, { request });
+            this.store.update(doc._id, { request });
         });
 
         if (callback) {
             // block request
             request = await new Promise(async (resolve) => {
                 request = await new Promise((resolve) => {
-                    this.once("" + ["doc", doc._id, "request"], resolve);
+                    this.store.once(`doc,${doc._id},request`, resolve);
                 });
                 callback(request, null, () => {
                     resolve(request);
@@ -417,6 +405,7 @@ class TransparentProxy extends Store {
         const protocol = input.protocol == "https:" ? https : http;
 
         const reqServer = protocol.request(request);
+
         reqServer.on("response", async (resServer) => {
             let response = {
                 status: resServer.statusCode,
@@ -441,14 +430,14 @@ class TransparentProxy extends Store {
             });
             readable.on("end", () => {
                 response.body = Buffer.concat(buffer);
-                this.update(doc._id, { response });
+                this.store.update(doc._id, { response });
             });
 
             if (callback) {
                 // block response
                 response = await new Promise(async (resolve) => {
                     response = await new Promise((resolve) => {
-                        this.once("" + ["doc", doc._id, "response"], resolve);
+                        this.store.once(`doc,${doc._id},response`, resolve);
                     });
                     callback(null, response, () => {
                         resolve(response);
@@ -478,6 +467,8 @@ class TransparentProxy extends Store {
             response.body.pipe(res);
         });
 
+        reqServer.on("upgrade", (res, socket, head) => {});
+
         request.body.pipe(reqServer);
     }
 
@@ -486,7 +477,7 @@ class TransparentProxy extends Store {
      * @param {Object} err
      */
     handleError(err) {
-        console.log(err);
+        console.log("handleError", err);
     }
 
     /**
@@ -519,9 +510,9 @@ class TransparentProxy extends Store {
         this.http.on("request", this.handleRequest);
         this.http.on("error", this.handleError);
 
-        this.https.on("connection", this.handleConnection);
-        this.https.on("connect", this.handleConnect);
-        this.https.on("upgrade", this.handleUpgrade);
+        // this.https.on("connection", this.handleConnection);
+        // this.https.on("connect", this.handleConnect);
+        // this.https.on("upgrade", this.handleUpgrade);
         this.https.on("request", this.handleRequest);
         this.https.on("error", this.handleError);
 
