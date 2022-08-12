@@ -323,14 +323,7 @@ class TransparentProxy extends Store {
      *
      * @param {Stream} socket
      */
-    handleConnection(socket) {
-        // socket.on("data", (chunk) => {
-        //     let data = "" + chunk;
-        //     if (data.indexOf("CONNECT") !== -1) {
-        //         console.log(data);
-        //     }
-        // });
-    }
+    handleConnection(socket) {}
 
     /**
      *
@@ -341,8 +334,8 @@ class TransparentProxy extends Store {
     handleConnect(req, socket, head) {
         const serverSocket = net.connect(this.https.address().port, this.hostname, () => {
             socket.write(
-                "HTTP/1.1 200 Connection Established\r\n" +
-                    // 'Proxy-agent: Node.js-Proxy\r\n' +
+                "HTTP/1.1 200 Connection Established\r\n" + //
+                    // "Proxy-agent: Node.js-Proxy\r\n" +
                     "\r\n"
             );
             serverSocket.write(head);
@@ -360,16 +353,7 @@ class TransparentProxy extends Store {
      * @param {Stream} socket
      * @param {Stream} head
      */
-    handleUpgrade(req, socket, head) {
-        socket.write(
-            "HTTP/1.1 101 Web Socket Protocol Handshake\r\n" +
-                "Upgrade: WebSocket\r\n" + //
-                "Connection: Upgrade\r\n" +
-                "\r\n"
-        );
-        socket.pipe(socket); // echo back
-        socket.on("error", this.handleError);
-    }
+    handleUpgrade(req, socket, head) {}
 
     /**
      *

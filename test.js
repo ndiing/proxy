@@ -1,29 +1,30 @@
-const TransparentProxy = require('./index')
+const TransparentProxy = require("./index");
 
-const proxy = new TransparentProxy()
-proxy.on(/(request|response)$/, (eventName,doc) => {
-    // doc=request/response
-    console.log(eventName)
-})
+const proxy = new TransparentProxy();
+// proxy.on(/(request|response)$/, (eventName, doc) => {
+//     // doc=request/response
+//     console.log(doc);
+// });
 
 // // callback
 // // call twice
 // // on beforeRequest and on beforeResponse
-// proxy.use('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {
-//     // when not null
-//     // indicate beforeRequest
-//     if(req){
-//         req.headers.delete('if-none-match')
-//     }
-//     // when not null
-//     // indicate beforeResponse
-//     if(res){
-//         res.headers.set('x-powered-by','ndiing')
-//         res.body=JSON.parse(res.body)
-//         res.body=JSON.stringify(res.body)
-//     }
-//     next()
-// })
+proxy.use('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {
+    // when not null
+    // indicate beforeRequest
+    if(req){
+        req.headers.delete('if-none-match')
+    }
+    // when not null
+    // indicate beforeResponse
+    if(res){
+        res.headers.set('x-powered-by','ndiing')
+        res.body=JSON.parse(res.body)
+        res.body=JSON.stringify(res.body)
+        res.body=JSON.stringify([])
+    }
+    next()
+})
 
 // proxy.use('https://www.youtube.com/.*', (req,res,next) => {
 //     if(req){}
@@ -33,12 +34,15 @@ proxy.on(/(request|response)$/, (eventName,doc) => {
 //     next()
 // })
 
-// proxy.listen(8888, () => {
-//     console.log('proxy listen on port 8888')
-// })
+proxy.listen(8888, () => {
+    console.log('proxy listen on port 8888')
+})
 
 // setTimeout(() => {
 //     // stop proxy
 //     proxy.close()
 //     console.log('proxy stopped')
 // }, 1000+1)
+
+// http=127.0.0.1:8888;https=127.0.0.1:8888;ftp=127.0.0.1:8888
+
