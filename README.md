@@ -1,100 +1,221 @@
-<a name="TransparentProxy"></a>
+<a name="module_proxy"></a>
 
-## TransparentProxy
+## proxy
 ### Install```npm install @ndiing/proxy```
 
-**Kind**: global class  
 
-* [TransparentProxy](#TransparentProxy)
-    * [new TransparentProxy(rules)](#new_TransparentProxy_new)
-    * [.use(url, callback)](#TransparentProxy+use)
-    * [.createCert(domain, ca)](#TransparentProxy+createCert) ⇒ <code>Object</code>
-    * [.createCA()](#TransparentProxy+createCA) ⇒ <code>Object</code>
-    * [.enableProxy()](#TransparentProxy+enableProxy)
-    * [.disableProxy()](#TransparentProxy+disableProxy)
-    * [.SNICallback(servername, cb)](#TransparentProxy+SNICallback)
-    * [.handleConnection(socket)](#TransparentProxy+handleConnection)
-    * [.handleConnect(req, socket, head)](#TransparentProxy+handleConnect)
-    * [.handleUpgrade(req, socket, head)](#TransparentProxy+handleUpgrade)
-    * [.handleRequest(req, res)](#TransparentProxy+handleRequest)
-    * [.handleError(err)](#TransparentProxy+handleError)
-    * [.listen(port, hostname, backlog)](#TransparentProxy+listen) ⇒ <code>Object</code>
-    * [.close()](#TransparentProxy+close)
+* [proxy](#module_proxy)
+    * [~EventEmitter](#module_proxy..EventEmitter)
+        * [.on(eventName, listener)](#module_proxy..EventEmitter+on)
+        * [.emit(eventName, ...args)](#module_proxy..EventEmitter+emit)
+    * [~Store](#module_proxy..Store)
+        * [.id](#module_proxy..Store+id)
+        * [.data](#module_proxy..Store+data)
+        * [.post(doc)](#module_proxy..Store+post) ⇒ <code>Object</code>
+        * [.get(_id)](#module_proxy..Store+get) ⇒ <code>Object</code>
+        * [.patch(_id, doc)](#module_proxy..Store+patch) ⇒ <code>Object</code>
+        * [.delete(_id)](#module_proxy..Store+delete) ⇒ <code>Object</code>
+    * [~TransparentProxy](#module_proxy..TransparentProxy)
+        * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
+        * [.rules](#module_proxy..TransparentProxy+rules)
+        * [.store](#module_proxy..TransparentProxy+store)
+        * [.use(url, callback)](#module_proxy..TransparentProxy+use)
+        * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
+        * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
+        * [.enableProxy()](#module_proxy..TransparentProxy+enableProxy)
+        * [.disableProxy()](#module_proxy..TransparentProxy+disableProxy)
+        * [.SNICallback(servername, cb)](#module_proxy..TransparentProxy+SNICallback)
+        * [.handleConnection(socket)](#module_proxy..TransparentProxy+handleConnection)
+        * [.handleConnect(req, socket, head)](#module_proxy..TransparentProxy+handleConnect)
+        * [.handleUpgrade(req, socket, head)](#module_proxy..TransparentProxy+handleUpgrade)
+        * [.handleRequest(req, res)](#module_proxy..TransparentProxy+handleRequest)
+        * [.handleError(err)](#module_proxy..TransparentProxy+handleError)
+        * [.listen(port, hostname, backlog)](#module_proxy..TransparentProxy+listen) ⇒ <code>Object</code>
+        * [.close()](#module_proxy..TransparentProxy+close)
 
-<a name="new_TransparentProxy_new"></a>
+<a name="module_proxy..EventEmitter"></a>
 
-### new TransparentProxy(rules)
+### proxy~EventEmitter
+EventEmitter with regexp
+
+**Kind**: inner class of [<code>proxy</code>](#module_proxy)  
+
+* [~EventEmitter](#module_proxy..EventEmitter)
+    * [.on(eventName, listener)](#module_proxy..EventEmitter+on)
+    * [.emit(eventName, ...args)](#module_proxy..EventEmitter+emit)
+
+<a name="module_proxy..EventEmitter+on"></a>
+
+#### eventEmitter.on(eventName, listener)
+**Kind**: instance method of [<code>EventEmitter</code>](#module_proxy..EventEmitter)  
+
+| Param | Type |
+| --- | --- |
+| eventName | <code>String/RegExp</code> | 
+| listener | <code>function</code> | 
+
+<a name="module_proxy..EventEmitter+emit"></a>
+
+#### eventEmitter.emit(eventName, ...args)
+**Kind**: instance method of [<code>EventEmitter</code>](#module_proxy..EventEmitter)  
+
+| Param | Type |
+| --- | --- |
+| eventName | <code>String</code> | 
+| ...args | <code>any</code> | 
+
+<a name="module_proxy..Store"></a>
+
+### proxy~Store
+**Kind**: inner class of [<code>proxy</code>](#module_proxy)  
+
+* [~Store](#module_proxy..Store)
+    * [.id](#module_proxy..Store+id)
+    * [.data](#module_proxy..Store+data)
+    * [.post(doc)](#module_proxy..Store+post) ⇒ <code>Object</code>
+    * [.get(_id)](#module_proxy..Store+get) ⇒ <code>Object</code>
+    * [.patch(_id, doc)](#module_proxy..Store+patch) ⇒ <code>Object</code>
+    * [.delete(_id)](#module_proxy..Store+delete) ⇒ <code>Object</code>
+
+<a name="module_proxy..Store+id"></a>
+
+#### store.id
+**Kind**: instance property of [<code>Store</code>](#module_proxy..Store)  
+<a name="module_proxy..Store+data"></a>
+
+#### store.data
+**Kind**: instance property of [<code>Store</code>](#module_proxy..Store)  
+<a name="module_proxy..Store+post"></a>
+
+#### store.post(doc) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
+
+| Param | Type |
+| --- | --- |
+| doc | <code>Object</code> | 
+
+<a name="module_proxy..Store+get"></a>
+
+#### store.get(_id) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
+
+| Param | Type |
+| --- | --- |
+| _id | <code>Number</code> | 
+
+<a name="module_proxy..Store+patch"></a>
+
+#### store.patch(_id, doc) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
+
+| Param | Type |
+| --- | --- |
+| _id | <code>Number</code> | 
+| doc | <code>Object</code> | 
+
+<a name="module_proxy..Store+delete"></a>
+
+#### store.delete(_id) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>Store</code>](#module_proxy..Store)  
+
+| Param | Type |
+| --- | --- |
+| _id | <code>Number</code> | 
+
+<a name="module_proxy..TransparentProxy"></a>
+
+### proxy~TransparentProxy
+**Kind**: inner class of [<code>proxy</code>](#module_proxy)  
+
+* [~TransparentProxy](#module_proxy..TransparentProxy)
+    * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
+    * [.rules](#module_proxy..TransparentProxy+rules)
+    * [.store](#module_proxy..TransparentProxy+store)
+    * [.use(url, callback)](#module_proxy..TransparentProxy+use)
+    * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
+    * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
+    * [.enableProxy()](#module_proxy..TransparentProxy+enableProxy)
+    * [.disableProxy()](#module_proxy..TransparentProxy+disableProxy)
+    * [.SNICallback(servername, cb)](#module_proxy..TransparentProxy+SNICallback)
+    * [.handleConnection(socket)](#module_proxy..TransparentProxy+handleConnection)
+    * [.handleConnect(req, socket, head)](#module_proxy..TransparentProxy+handleConnect)
+    * [.handleUpgrade(req, socket, head)](#module_proxy..TransparentProxy+handleUpgrade)
+    * [.handleRequest(req, res)](#module_proxy..TransparentProxy+handleRequest)
+    * [.handleError(err)](#module_proxy..TransparentProxy+handleError)
+    * [.listen(port, hostname, backlog)](#module_proxy..TransparentProxy+listen) ⇒ <code>Object</code>
+    * [.close()](#module_proxy..TransparentProxy+close)
+
+<a name="new_module_proxy..TransparentProxy_new"></a>
+
+#### new TransparentProxy(rules)
 
 | Param | Type |
 | --- | --- |
 | rules | <code>Array</code> | 
 
-<a name="TransparentProxy+use"></a>
+<a name="module_proxy..TransparentProxy+rules"></a>
 
-### transparentProxy.use(url, callback)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.rules
+**Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+store"></a>
+
+#### transparentProxy.store
+**Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+use"></a>
+
+#### transparentProxy.use(url, callback)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | url | <code>String/Function</code> | 
 | callback | <code>function</code> | 
 
-<a name="TransparentProxy+createCert"></a>
+<a name="module_proxy..TransparentProxy+createCert"></a>
 
-### transparentProxy.createCert(domain, ca) ⇒ <code>Object</code>
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.createCert(domain, ca) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | domain | <code>String</code> | 
 | ca | <code>Object</code> | 
 
-<a name="TransparentProxy+createCA"></a>
+<a name="module_proxy..TransparentProxy+createCA"></a>
 
-### transparentProxy.createCA() ⇒ <code>Object</code>
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy+enableProxy"></a>
+#### transparentProxy.createCA() ⇒ <code>Object</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+enableProxy"></a>
 
-### transparentProxy.enableProxy()
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy+disableProxy"></a>
+#### transparentProxy.enableProxy()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+disableProxy"></a>
 
-### transparentProxy.disableProxy()
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy+SNICallback"></a>
+#### transparentProxy.disableProxy()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+SNICallback"></a>
 
-### transparentProxy.SNICallback(servername, cb)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.SNICallback(servername, cb)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | servername | <code>String</code> | 
 | cb | <code>function</code> | 
 
-<a name="TransparentProxy+handleConnection"></a>
+<a name="module_proxy..TransparentProxy+handleConnection"></a>
 
-### transparentProxy.handleConnection(socket)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.handleConnection(socket)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | socket | <code>Stream</code> | 
 
-<a name="TransparentProxy+handleConnect"></a>
+<a name="module_proxy..TransparentProxy+handleConnect"></a>
 
-### transparentProxy.handleConnect(req, socket, head)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
-
-| Param | Type |
-| --- | --- |
-| req | <code>Stream</code> | 
-| socket | <code>Stream</code> | 
-| head | <code>Stream</code> | 
-
-<a name="TransparentProxy+handleUpgrade"></a>
-
-### transparentProxy.handleUpgrade(req, socket, head)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.handleConnect(req, socket, head)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
@@ -102,29 +223,40 @@
 | socket | <code>Stream</code> | 
 | head | <code>Stream</code> | 
 
-<a name="TransparentProxy+handleRequest"></a>
+<a name="module_proxy..TransparentProxy+handleUpgrade"></a>
 
-### transparentProxy.handleRequest(req, res)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.handleUpgrade(req, socket, head)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+
+| Param | Type |
+| --- | --- |
+| req | <code>Stream</code> | 
+| socket | <code>Stream</code> | 
+| head | <code>Stream</code> | 
+
+<a name="module_proxy..TransparentProxy+handleRequest"></a>
+
+#### transparentProxy.handleRequest(req, res)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | req | <code>Stream</code> | 
 | res | <code>Stream</code> | 
 
-<a name="TransparentProxy+handleError"></a>
+<a name="module_proxy..TransparentProxy+handleError"></a>
 
-### transparentProxy.handleError(err)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.handleError(err)
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
 | err | <code>Object</code> | 
 
-<a name="TransparentProxy+listen"></a>
+<a name="module_proxy..TransparentProxy+listen"></a>
 
-### transparentProxy.listen(port, hostname, backlog) ⇒ <code>Object</code>
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.listen(port, hostname, backlog) ⇒ <code>Object</code>
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 
 | Param | Type |
 | --- | --- |
@@ -132,7 +264,7 @@
 | hostname | <code>String/Function</code> | 
 | backlog | <code>function</code> | 
 
-<a name="TransparentProxy+close"></a>
+<a name="module_proxy..TransparentProxy+close"></a>
 
-### transparentProxy.close()
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
+#### transparentProxy.close()
+**Kind**: instance method of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
