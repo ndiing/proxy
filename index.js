@@ -561,3 +561,5 @@ class TransparentProxy extends Store {
 TransparentProxy.EventEmitter = EventEmitter;
 TransparentProxy.Store = Store;
 module.exports = TransparentProxy;
+
+// jsdoc2md proxy/index.js > proxy/README.md
