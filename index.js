@@ -116,12 +116,12 @@ class Store extends EventEmitter {
                 // store,0,request
                 // store,0,response
                 let value = doc[name];
-                this.emit("" + ['doc', _id, name], value);
+                this.emit("" + ["doc", _id, name], value);
                 old[name] = value;
             }
 
             // store,0
-            this.emit("" + ['doc', _id], old);
+            this.emit("" + ["doc", _id], old);
 
             return { _id, ok: true };
         }
@@ -155,7 +155,7 @@ class TransparentProxy extends Store {
      * @param {Array} rules
      */
     constructor(rules = []) {
-        super()
+        super();
         this.SNICallback = this.SNICallback.bind(this);
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
