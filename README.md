@@ -18,6 +18,7 @@
     * [~TransparentProxy](#module_proxy..TransparentProxy)
         * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
         * [.rules](#module_proxy..TransparentProxy+rules)
+        * [.store](#module_proxy..TransparentProxy+store)
         * [.use(url, callback)](#module_proxy..TransparentProxy+use)
         * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
         * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
@@ -129,6 +130,7 @@ EventEmitter with regexp
 * [~TransparentProxy](#module_proxy..TransparentProxy)
     * [new TransparentProxy(rules)](#new_module_proxy..TransparentProxy_new)
     * [.rules](#module_proxy..TransparentProxy+rules)
+    * [.store](#module_proxy..TransparentProxy+store)
     * [.use(url, callback)](#module_proxy..TransparentProxy+use)
     * [.createCert(domain, ca)](#module_proxy..TransparentProxy+createCert) ⇒ <code>Object</code>
     * [.createCA()](#module_proxy..TransparentProxy+createCA) ⇒ <code>Object</code>
@@ -154,6 +156,10 @@ EventEmitter with regexp
 <a name="module_proxy..TransparentProxy+rules"></a>
 
 #### transparentProxy.rules
+**Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
+<a name="module_proxy..TransparentProxy+store"></a>
+
+#### transparentProxy.store
 **Kind**: instance property of [<code>TransparentProxy</code>](#module_proxy..TransparentProxy)  
 <a name="module_proxy..TransparentProxy+use"></a>
 
