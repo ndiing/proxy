@@ -5,7 +5,7 @@
     "regedit": "^5.1.1"
   },
   "name": "@ndiinginc/proxy",
-  "description": "[Docs](https://ndiing.github.io/proxy/) ``` npm install @ndiing/proxy ```",
+  "description": "nodejs transparent/inline/intercepting/debugging proxy",
   "version": "1.0.0",
   "main": "index.js",
   "devDependencies": {},
