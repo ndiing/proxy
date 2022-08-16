@@ -1,13 +1,14 @@
 {
   "dependencies": {
-    "@ndiing/fetch": "^2.0.5",
-    "mkcert": "^1.5.0",
+    "@ndiinginc/fetch": "^1.0.0",
+    "mkcert": "^1.5.1",
     "regedit": "^5.1.1"
   },
-  "name": "@ndiing/proxy",
-  "description": "<a name=\"TransparentProxy\"></a>",
-  "version": "2.1.2",
+  "name": "@ndiinginc/proxy",
+  "description": "[Docs](https://ndiing.github.io/proxy/) ``` npm install @ndiing/proxy ```",
+  "version": "1.0.0",
   "main": "index.js",
+  "devDependencies": {},
   "scripts": {
     "test": "exit 0"
   },
@@ -18,7 +19,9 @@
   "keywords": [
     "nodejs",
     "proxy",
-    "transparent"
+    "transparent-proxy",
+    "inline-proxy",
+    "intercept-proxy"
   ],
   "author": "ndiing",
   "license": "MIT",

@@ -3,277 +3,375 @@ const https = require("https");
 const net = require("net");
 const tls = require("tls");
 const zlib = require("zlib");
-const fs = require("fs");
 const { Readable } = require("stream");
+const fs = require("fs");
 const events = require("events");
 const { promisify } = require("util");
 const { exec } = require("child_process");
-const mkcert = require("mkcert");
 const regedit = require("regedit").promisified;
-const { URL2, Headers } = require("@ndiing/fetch");
-const Crypto = require("@ndiing/crypto");
+const mkcert = require("mkcert");
+const { URL2, Headers } = require("@ndiinginc/fetch");
 
-// avoid error
 process.on("uncaughtException", (err) => {
-    console.log("uncaughtException", err);
+    console.log(err);
 });
 process.on("unhandledRejection", (err) => {
-    console.log("unhandledRejection", err);
+    console.log(err);
 });
 
-/**
- * ### Install
- * ```
- * npm install @ndiing/proxy
- * ```
- * @module proxy
- */
+function enableProxy(options = {}) {
+    return regedit
+        .putValue({
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                ProxyEnable: { value: 1, type: "REG_DWORD" },
+                ProxyOverride: { value: "<-loopback>", type: "REG_SZ" },
+                ProxyServer: { value: `http=${options.hostname}:${options.port};https=${options.hostname}:${options.port};ftp=${options.hostname}:${options.port}`, type: "REG_SZ" },
+            },
+        })
+        .catch(() => {});
+}
 
-/**
- * EventEmitter with regexp
- */
+function disableProxy() {
+    return regedit
+        .putValue({
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                ProxyEnable: { value: 0, type: "REG_DWORD" },
+                ProxyOverride: { value: "", type: "REG_SZ" },
+                ProxyServer: { value: "", type: "REG_SZ" },
+            },
+        })
+        .catch(() => {});
+}
+
+function createCert(domain, ca) {
+    return mkcert.createCert({
+        domains: ["127.0.0.1", "localhost", domain],
+        validityDays: 365,
+        caKey: ca.key,
+        caCert: ca.cert,
+    });
+}
+
+async function createCA() {
+    let ca = {};
+    try {
+        ca.key = fs.readFileSync("./ca.key");
+        ca.cert = fs.readFileSync("./ca.crt");
+    } catch (error) {
+        ca = await mkcert.createCA({
+            organization: "Ndiing CA",
+            countryCode: "ID",
+            state: "Jatim",
+            locality: "Pacitan",
+            validityDays: 365,
+        });
+
+        fs.writeFileSync("./ca.key", ca.key);
+        fs.writeFileSync("./ca.crt", ca.cert);
+
+        await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
+    }
+    return ca;
+}
+
 class EventEmitter extends events {
-    /**
-     *
-     * @param {String/RegExp} eventName
-     * @param {Function} listener
-     */
     on(eventName, listener) {
         super.on(eventName.source || eventName, listener);
     }
-
-    /**
-     *
-     * @param {String} eventName
-     * @param  {...any} args
-     */
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
         for (const _eventName in this._events) {
-            if (new RegExp(_eventName).test(eventName) && _eventName !== eventName) {
+            if (new RegExp(`^${_eventName}$`).test(eventName) && _eventName !== eventName) {
                 super.emit(_eventName, eventName, ...args);
             }
         }
     }
 }
 
-/**
- *
- */
-class Store extends EventEmitter {
+class Database extends EventEmitter {
+    docs = [];
     _id = -1;
 
-    /**
-     *
-     */
     get id() {
         return ++this._id;
     }
 
-    /**
-     *
-     */
-    data = [];
-
-    /**
-     *
-     * @param {Object} doc
-     * @returns {Object}
-     */
-    create(doc = {}) {
+    post(doc = {}) {
         doc._id = this.id;
-        this.data[doc._id] = doc;
-        return { _id: doc._id, ok: true };
+        this.docs[doc._id] = doc;
+        return { _id: doc._id };
     }
 
-    /**
-     *
-     * @param {Number} _id
-     * @returns {Object}
-     */
-    read(_id) {
-        return this.data[_id];
+    get(_id) {
+        return this.docs[_id];
     }
 
-    /**
-     *
-     * @param {Number} _id
-     * @param {Object} doc
-     * @returns {Object}
-     */
-    update(_id, doc = {}) {
-        let old = this.read(_id);
-        if (old) {
-            for (const name in doc) {
-                if (name == "_id") {
-                    continue;
-                }
+    patch(_id, doc = {}) {
+        let oldDoc = this.get(_id);
 
-                // store,0,request
-                // store,0,response
-                let value = doc[name];
-                this.emit(`doc,${_id},${name}`, value);
-                old[name] = value;
+        for (const name in doc) {
+            if (name == "_id") {
+                continue;
             }
-
-            // store,0
-            this.emit(`doc,${_id}`, old);
-
-            return { _id, ok: true };
+            oldDoc[name] = doc[name];
+            this.emit(`${name},${_id}`, oldDoc[name]);
         }
-
-        return { _id, ok: false };
-    }
-
-    /**
-     *
-     * @param {Number} _id
-     * @returns {Object}
-     */
-    destroy(_id) {
-        let old = this.read(_id);
-        this.data[_id] = null;
-        return { _id, ok: !!old };
+        return { _id };
     }
 }
 
-/**
- *
- */
 class TransparentProxy {
-    /**
-     *
-     */
     rules = [];
 
-    /**
-     *
-     */
-    store = new Store();
-
-    /**
-     *
-     * @param {Array} rules
-     */
-    constructor(rules = []) {
-        this.SNICallback = this.SNICallback.bind(this);
-        this.handleConnection = this.handleConnection.bind(this);
-        this.handleConnect = this.handleConnect.bind(this);
-        this.handleUpgrade = this.handleUpgrade.bind(this);
+    constructor() {
+        this.database = new Database();
+        this.handleSocketError = this.handleSocketError.bind(this);
+        this.handleServerError = this.handleServerError.bind(this);
+        this.handleServerUpgrade = this.handleServerUpgrade.bind(this);
+        this.handleServerResponse = this.handleServerResponse.bind(this);
         this.handleRequest = this.handleRequest.bind(this);
         this.handleError = this.handleError.bind(this);
+        this.handleConnection = this.handleConnection.bind(this);
+        this.handleConnect = this.handleConnect.bind(this);
+        this.SNICallback = this.SNICallback.bind(this);
+        // this.readRequest = this.readRequest.bind(this);
+        // this.writeRequest = this.writeRequest.bind(this);
+        // this.readResponse = this.readResponse.bind(this);
+        // this.writeResponse = this.writeResponse.bind(this);
 
-        for (let i = 0; i < http.METHODS.length; i++) {
-            const method = http.METHODS[i];
+        const methods = ["POST", "GET", "PATCH", "PUT", "DELETE"];
 
+        for (let i = 0; i < methods.length; i++) {
+            const method = methods[i];
             this[method.toLowerCase()] = (...args) => {
                 this.add(method, ...args);
             };
         }
-
-        for (let j = 0; j < rules.length; j++) {
-            const { method = ".*", url = ".*", callback } = rules[j];
-            this.add({ method, url, callback });
-        }
     }
 
-    add(method, url, callback) {
+    add(method, path, callback) {
         if (typeof method == "object") {
-            ({ method, url, callback } = method);
+            ({ method, path, callback } = method);
         }
-
-        if (typeof url == "function") {
-            callback = url;
-            url = ".*";
-        }
-
-        url = new RegExp(`^${url.source || url}$`, "i");
-        this.rules.push({ method, url, callback });
+        let regexp = path.source || path;
+        regexp = new RegExp("^" + regexp, "i");
+        this.rules.push({ method, path, callback, regexp });
     }
 
-    /**
-     *
-     * @param  {String/Function} url
-     * @param  {Function} callback
-     */
     use(...args) {
         this.add(".*", ...args);
     }
 
-    /**
-     *
-     * @param {String} domain
-     * @param {Object} ca
-     * @returns {Object}
-     */
-    async createCert(domain, ca) {
-        return await mkcert.createCert({
-            domains: ["::1", "127.0.0.1", "localhost", domain],
-            validityDays: 365,
-            caKey: ca.key,
-            caCert: ca.cert,
+    handleConnection(socket) {}
+
+    handleConnect(req, socket, head) {
+        const socketServer = net.connect(this.httpsServer.address().port, this.hostname, () => {
+            let message = "";
+            message += "HTTP/1.1 200 OK\r\n";
+            message += "\r\n";
+
+            socket.write(message);
+            socketServer.write(head);
+            socketServer.pipe(socket);
+            socket.pipe(socketServer);
+
+            socketServer.on("error", this.handleSocketError);
+            socket.on("error", this.handleSocketError);
         });
     }
 
-    /**
-     *
-     * @returns {Object}
-     */
-    async createCA() {
-        let ca = {};
-        try {
-            ca.key = fs.readFileSync("./ca.key");
-            ca.cert = fs.readFileSync("./ca.crt");
-        } catch (error) {
-            ca = await mkcert.createCA({
-                organization: "NDIING",
-                countryCode: "ID",
-                state: "JATIM",
-                locality: "PACITAN",
-                validityDays: 365,
-            });
+    async handleRequest(req, res, head) {
+        let { request, protocol, socket } = this.request(req, res);
 
-            fs.writeFileSync("./ca.key", ca.key);
-            fs.writeFileSync("./ca.crt", ca.cert);
-            await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
+        const doc = this.database.post();
+        let callback;
+        for (let i = 0; i < this.rules.length; i++) {
+            const rule = this.rules[i];
+            const passed = (rule.method == ".*" || rule.method == request.method) && rule.regexp.test(request.href);
+            if (passed) {
+                callback = rule.callback;
+                break;
+            }
         }
 
-        return ca;
+        this.readRequest(req, request, doc);
+
+        if (callback) {
+            request = await this.beforeRequest(request, doc, callback);
+        }
+
+        const reqServer = protocol.request(request);
+        reqServer.on("error", this.handleServerError);
+        reqServer.on("upgrade", this.handleServerUpgrade(socket, head));
+        reqServer.on("response", this.handleServerResponse(doc, callback, res));
+
+        request.body.pipe(reqServer);
     }
 
-    /**
-     *
-     */
-    async enableProxy() {
-        try {
-            await regedit.putValue({ "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": { ProxyEnable: { value: 1, type: "REG_DWORD" }, ProxyOverride: { value: "<-loopback>", type: "REG_SZ" }, ProxyServer: { value: `http=${this.hostname}:${this.port};https=${this.hostname}:${this.port};ftp=${this.hostname}:${this.port}`, type: "REG_SZ" } } });
-        } catch (error) {}
+    async beforeRequest(request, doc, callback) {
+        request = await new Promise(async (resolve) => {
+            request = await new Promise((resolve) => {
+                this.database.once(`request,${doc._id}`, resolve);
+            });
+            callback(request, null, () => {
+                this.writeRequest(request);
+                resolve(request);
+            });
+        });
+        return request;
     }
 
-    /**
-     *
-     */
-    async disableProxy() {
-        try {
-            await regedit.putValue({ "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": { ProxyEnable: { value: 0, type: "REG_DWORD" }, ProxyOverride: { value: "", type: "REG_SZ" }, ProxyServer: { value: "", type: "REG_SZ" } } });
-        } catch (error) {}
+    request(req, res) {
+        const base = (req.socket.encrypted ? "https:" : "http") + "//" + req.headers.host;
+        const url = new URL2(req.url, base);
+        const protocol = url.protocol == "https:" ? https : http;
+        const socket = res;
+
+        let request = url;
+        request.method = req.method;
+        request.headers = new Headers(req.headers);
+        request.body = req;
+        return { request, protocol, socket };
     }
+
+    response(resServer) {
+        let response = {};
+        response.body = resServer;
+        response.status = resServer.statusCode;
+        response.headers = new Headers(resServer.headers);
+        return response;
+    }
+
+    handleServerResponse(doc, callback, res) {
+        return async (resServer) => {
+            let response = this.response(resServer);
+            const encoding = response.headers.get("content-encoding");
+
+            this.readResponse(response, encoding, doc);
+
+            if (callback) {
+                response = await this.beforeResponse(response, doc, callback, encoding);
+            }
+
+            res.writeHead(response.status, response.headers.entries());
+            response.body.pipe(res);
+        };
+    }
+
+    async beforeResponse(response, doc, callback, encoding) {
+        response = await new Promise(async (resolve) => {
+            response = await new Promise((resolve) => {
+                this.database.once(`response,${doc._id}`, resolve);
+            });
+            callback(null, response, () => {
+                this.writeResponse(response, encoding);
+                resolve(response);
+            });
+        });
+        return response;
+    }
+
+    handleServerUpgrade(socket, head) {
+        return (resServer, socketServer, headServer) => {
+            let message = "";
+            message += "HTTP/1.1 101 Switching Protocols\r\n";
+
+            for (const name in resServer.headers) {
+                message += `${name}: ${resServer.headers[name]}\r\n`;
+            }
+            message += "\r\n";
+
+            socket.write(message);
+            socketServer.write(head);
+            socketServer.pipe(socket);
+            socket.pipe(socketServer);
+
+            socketServer.on("error", this.handleSocketError);
+            socket.on("error", this.handleSocketError);
+        };
+    }
+
+    readRequest(req, request, doc) {
+        let buffer = [];
+        req.on("data", (chunk) => {
+            buffer.push(chunk);
+        });
+        req.on("end", () => {
+            let body = "" + Buffer.concat(buffer);
+            request.body = body;
+            this.database.patch(doc._id, { request });
+        });
+    }
+
+    writeRequest(request) {
+        let readable = request.body;
+
+        if (!(request.body instanceof Readable)) {
+            readable = new Readable();
+            readable.push(request.body);
+            readable.push(null);
+        }
+        request.body = readable;
+    }
+
+    readResponse(response, encoding, doc) {
+        let readable = response.body;
+
+        if (encoding == "gzip") {
+            readable = readable.pipe(zlib.createGunzip());
+        } else if (encoding == "deflate") {
+            readable = readable.pipe(zlib.createInflate());
+        } else if (encoding == "br") {
+            readable = readable.pipe(zlib.createBrotliDecompress());
+        }
+
+        let buffer = [];
+        readable.on("data", (chunk) => {
+            buffer.push(chunk);
+        });
+        readable.on("end", () => {
+            let body = "" + Buffer.concat(buffer);
+            response.body = body;
+            this.database.patch(doc._id, { response });
+        });
+    }
+
+    writeResponse(response, encoding) {
+        let readable = response.body;
+
+        if (!(response.body instanceof Readable)) {
+            readable = new Readable();
+            readable.push(response.body);
+            readable.push(null);
+
+            if (encoding == "gzip") {
+                readable = readable.pipe(zlib.createGzip());
+            } else if (encoding == "deflate") {
+                readable = readable.pipe(zlib.createDeflate());
+            } else if (encoding == "br") {
+                readable = readable.pipe(zlib.createBrotliCompress());
+            }
+        }
+        response.body = readable;
+    }
+
+    handleError(err) {}
+
+    handleSocketError(err) {}
+
+    handleServerError(err) {}
 
     ctx = {};
 
-    /**
-     *
-     * @param {String} servername
-     * @param {Function} cb
-     */
     async SNICallback(servername, cb) {
         let err = null;
         let ctx = null;
+
         if (this.ctx[servername]) {
             ctx = this.ctx[servername];
         } else {
-            const ca = await this.createCA();
-            const cert = await this.createCert(servername, ca);
+            const ca = await createCA();
+            const cert = await createCert(servername, ca);
             ctx = tls.createSecureContext(cert);
             this.ctx[servername] = ctx;
         }
@@ -281,260 +379,50 @@ class TransparentProxy {
         cb(err, ctx);
     }
 
-    /**
-     *
-     * @param {Stream} socket
-     */
-    handleConnection(socket) {}
-
-    /**
-     *
-     * @param {Stream} req
-     * @param {Stream} socket
-     * @param {Stream} head
-     */
-    handleConnect(req, socket, head) {
-        this.store.create({ request: { method: req.method, url: req.url, headers: req.headers } });
-
-        const serverSocket = net.connect(this.https.address().port, this.hostname, () => {
-            let message = "";
-            message += `HTTP/1.1 200 Connection Established\r\n`;
-            message += "\r\n";
-            socket.write(message);
-            serverSocket.write(head);
-            serverSocket.pipe(socket);
-            socket.pipe(serverSocket);
-        });
-
-        serverSocket.on("error", this.handleError);
-        socket.on("error", this.handleError);
-    }
-
-    /**
-     *
-     * @param {Stream} req
-     * @param {Stream} socket
-     * @param {Stream} head
-     */
-    handleUpgrade(req, socket, head) {
-        // https://www.rfc-editor.org/rfc/rfc6455#section-1.2
-        // 258EAFA5-E914-47DA-95CA-C5AB0DC85B11
-        this.store.create({ request: { method: req.method, url: req.url, headers: req.headers } });
-
-        const hash = Crypto.hash(req.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", {
-            algorithm: "sha1",
-            encoding: "base64",
-        });
-
-        let message = "";
-        message += `HTTP/1.1 101 Switching Protocols\r\n`;
-        message += `Upgrade: websocket\r\n`;
-        message += `Sec-WebSocket-Accept: ${hash}\r\n`;
-        message += `Connection: Upgrade\r\n`;
-        message += "\r\n";
-        socket.write(message);
-        socket.pipe(socket);
-        socket.on("error", this.handleError);
-    }
-
-    /**
-     *
-     * @param {Stream} req
-     * @param {Stream} res
-     */
-    async handleRequest(req, res) {
-        const base = (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host;
-        const input = new URL2(req.url, base);
-
-        let request = {
-            ...input,
-            method: req.method,
-            headers: new Headers(req.headers),
-            body: req,
-        };
-
-        // // raw
-        // console.log(
-        //     `${request.method} ${''+input} HTTP/${req.httpVersion}\r\n`+
-        //     ''+request.headers
-        // )
-
-        let callback;
-
-        for (let i = 0; i < this.rules.length; i++) {
-            const rule = this.rules[i];
-            const passed = (rule.method == ".*" || rule.method == request.method) && rule.url.test(request.href);
-            if (passed) {
-                callback = rule.callback;
-                break;
-            }
-        }
-
-        let readable = request.body;
-        const doc = this.store.create();
-
-        const buffer = [];
-        readable.on("data", (chunk) => {
-            buffer.push(chunk);
-        });
-        readable.on("end", () => {
-            request.body = Buffer.concat(buffer);
-            this.store.update(doc._id, { request });
-        });
-
-        if (callback) {
-            // block request
-            request = await new Promise(async (resolve) => {
-                request = await new Promise((resolve) => {
-                    this.store.once(`doc,${doc._id},request`, resolve);
-                });
-                callback(request, null, () => {
-                    resolve(request);
-                });
-            });
-        }
-
-        if (!(request.body instanceof Readable)) {
-            readable = new Readable();
-            readable.push(request.body);
-            readable.push(null);
-
-            request.body = readable;
-        }
-
-        const protocol = input.protocol == "https:" ? https : http;
-
-        const reqServer = protocol.request(request);
-
-        reqServer.on("response", async (resServer) => {
-            let response = {
-                status: resServer.statusCode,
-                headers: new Headers(resServer.headers),
-                body: resServer,
-            };
-
-            let readable = response.body;
-            const encoding = response.headers.get("content-encoding");
-
-            if (encoding == "gzip") {
-                readable = response.body.pipe(zlib.createGunzip());
-            } else if (encoding == "deflate") {
-                readable = response.body.pipe(zlib.createInflate());
-            } else if (encoding == "br") {
-                readable = response.body.pipe(zlib.createBrotliDecompress());
-            }
-
-            const buffer = [];
-            readable.on("data", (chunk) => {
-                buffer.push(chunk);
-            });
-            readable.on("end", () => {
-                response.body = Buffer.concat(buffer);
-                this.store.update(doc._id, { response });
-            });
-
-            if (callback) {
-                // block response
-                response = await new Promise(async (resolve) => {
-                    response = await new Promise((resolve) => {
-                        this.store.once(`doc,${doc._id},response`, resolve);
-                    });
-                    callback(null, response, () => {
-                        resolve(response);
-                    });
-                });
-            }
-
-            if (!(response.body instanceof Readable)) {
-                readable = new Readable();
-                readable.push(response.body);
-                readable.push(null);
-
-                response.body = readable;
-
-                if (encoding == "gzip") {
-                    readable = response.body.pipe(zlib.createGzip());
-                } else if (encoding == "deflate") {
-                    readable = response.body.pipe(zlib.createDeflate());
-                } else if (encoding == "br") {
-                    readable = response.body.pipe(zlib.createBrotliCompress());
-                }
-
-                response.body = readable;
-            }
-
-            res.writeHead(response.status, response.headers.entries());
-            response.body.pipe(res);
-        });
-
-        reqServer.on("upgrade", (res, socket, head) => {});
-
-        request.body.pipe(reqServer);
-    }
-
-    /**
-     *
-     * @param {Object} err
-     */
-    handleError(err) {
-        console.log("handleError", err);
-    }
-
-    /**
-     *
-     * @param {Number} port
-     * @param {String/Function} hostname
-     * @param {Function} backlog
-     * @returns {Object}
-     */
     async listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
-            hostname = "";
+            hostname = undefined;
         }
 
-        this.port = port || 8888;
-        this.hostname = hostname || "127.0.0.1";
+        hostname = hostname || "127.0.0.1";
+        this.hostname = hostname;
+        port = port || 8888;
+        this.port = port;
 
-        await this.enableProxy();
+        await enableProxy({
+            hostname,
+            port,
+        });
 
-        this.http = http.createServer().listen(this.port, this.hostname, backlog);
+        const SNICallback = this.SNICallback;
+        this.httpServer = http.createServer().listen(port, hostname, backlog);
+        this.httpsServer = https.createServer({ SNICallback }).listen(0, hostname);
 
-        let SNICallback = this.SNICallback;
+        this.httpServer.on("connection", this.handleConnection);
+        this.httpServer.on("connect", this.handleConnect);
+        this.httpServer.on("upgrade", this.handleRequest);
+        this.httpServer.on("request", this.handleRequest);
+        this.httpServer.on("error", this.handleError);
 
-        this.https = https.createServer({ SNICallback }).listen(0, this.hostname);
+        this.httpsServer.on("connection", this.handleConnection);
+        this.httpsServer.on("connect", this.handleConnect);
+        this.httpsServer.on("upgrade", this.handleRequest);
+        this.httpsServer.on("request", this.handleRequest);
+        this.httpsServer.on("error", this.handleError);
 
-        this.http.on("connection", this.handleConnection);
-        this.http.on("connect", this.handleConnect);
-        this.http.on("upgrade", this.handleUpgrade);
-        this.http.on("request", this.handleRequest);
-        this.http.on("error", this.handleError);
-
-        // this.https.on("connection", this.handleConnection);
-        // this.https.on("connect", this.handleConnect);
-        // this.https.on("upgrade", this.handleUpgrade);
-        this.https.on("request", this.handleRequest);
-        this.https.on("error", this.handleError);
-
-        return this.http;
+        return this.httpServer;
     }
 
-    /**
-     *
-     */
     async close() {
-        this.http.close();
-        this.https.close();
+        this.httpServer.close();
+        this.httpServer = null;
 
-        this.http = null;
-        this.https = null;
+        this.httpsServer.close();
+        this.httpsServer = null;
 
-        await this.disableProxy();
+        await disableProxy();
     }
 }
 
-TransparentProxy.EventEmitter = EventEmitter;
-TransparentProxy.Store = Store;
 module.exports = TransparentProxy;
-
-// jsdoc2md proxy/index.js > proxy/README.md
