@@ -1,4 +1,4 @@
-# proxy
+# [proxy](https://ndiing.github.io/proxy/)
 proxy
 
 ### Install
