@@ -1,4 +1,45 @@
-const http = require("http");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>index.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Database.html">Database</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="EventEmitter.html">EventEmitter</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="EventEmitter.html#emit">emit</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="EventEmitter.html#on">on</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="TransparentProxy.html">TransparentProxy</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#.createCA">createCA</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#.createCert">createCert</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#.disableProxy">disableProxy</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#.enableProxy">enableProxy</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#close">close</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#listen">listen</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="TransparentProxy.html#use">use</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">index.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const http = require("http");
 const https = require("https");
 const net = require("net");
 const tls = require("tls");
@@ -40,7 +81,7 @@ class EventEmitter extends events {
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
         for (const _eventName in this._events) {
-            if (new RegExp(`^${_eventName}$`).test(eventName) && _eventName !== eventName) {
+            if (new RegExp(`^${_eventName}$`).test(eventName) &amp;&amp; _eventName !== eventName) {
                 super.emit(_eventName, eventName, ...args);
             }
         }
@@ -101,7 +142,7 @@ class TransparentProxy {
             .putValue({
                 "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
                     ProxyEnable: { value: 1, type: "REG_DWORD" },
-                    ProxyOverride: { value: "<-loopback>", type: "REG_SZ" },
+                    ProxyOverride: { value: "&lt;-loopback>", type: "REG_SZ" },
                     ProxyServer: { value: `http=${options.hostname}:${options.port};https=${options.hostname}:${options.port};ftp=${options.hostname}:${options.port}`, type: "REG_SZ" },
                 },
             })
@@ -160,7 +201,7 @@ class TransparentProxy {
             fs.writeFileSync("./ca.key", ca.key);
             fs.writeFileSync("./ca.crt", ca.cert);
 
-            await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
+            await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} &amp;&amp; certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
         }
         return ca;
     }
@@ -183,7 +224,7 @@ class TransparentProxy {
 
         const methods = ["POST", "GET", "PATCH", "PUT", "DELETE"];
 
-        for (let i = 0; i < methods.length; i++) {
+        for (let i = 0; i &lt; methods.length; i++) {
             const method = methods[i];
             this[method.toLowerCase()] = (...args) => {
                 this.add(method, ...args);
@@ -231,9 +272,9 @@ class TransparentProxy {
 
         const doc = this.database.post();
         let callback;
-        for (let i = 0; i < this.rules.length; i++) {
+        for (let i = 0; i &lt; this.rules.length; i++) {
             const rule = this.rules[i];
-            const passed = (rule.method == ".*" || rule.method == request.method) && rule.regexp.test(request.href);
+            const passed = (rule.method == ".*" || rule.method == request.method) &amp;&amp; rule.regexp.test(request.href);
             if (passed) {
                 callback = rule.callback;
                 break;
@@ -482,3 +523,22 @@ class TransparentProxy {
 }
 
 module.exports = TransparentProxy;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.11</a> on Sat Aug 20 2022 17:08:11 GMT+0700 (Western Indonesia Time) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
