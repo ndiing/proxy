@@ -1,56 +1,37 @@
-# [proxy](https://ndiing.github.io/proxy/)
-proxy
+# EventEmitter
 
-### Install
-```
-npm install @ndiinginc/proxy
-```
+## [Methods]()
 
-### Usage
-```js
+[`EventEmitter.on()`]()
 
-// Create proxy
-const TransparentProxy = require('@ndiinginc/proxy')
+[`EventEmitter.emit()`]()
 
-// this will automaticaly
-// create certificate authority
-// import to windows trusted root ca
-// enable&disable windows proxy internet settings
-const proxy = new TransparentProxy();
+# Database
 
-// Incoming request&response
-// event format =
-// request,<id>
-// response,<id>
-// best practice using regexp
-proxy.database.on(/request.*/, console.log);
-proxy.database.on(/response.*/, console.log);
+# TransparentProxy
 
-// Intercept request&response
-// this will call twice on beforeRequest and beforeResponse
-proxy.use('https://jsonplaceholder.typicode.com/todos', (req,res,next) => {
-    // when req not null is callback from before request
-    if(req){
-        // remove cache
-        req.headers.delete('if-none-match')
-    }
-    // and when res not null is callback from before response
-    if(res){
-        // modify response body
-        res.body = JSON.stringify([])
-    }
-    next()
-})
+## [Properties]()
 
-// Listen on port 8888
-proxy.listen(8888, () => {
-    console.log("proxy started on port 8888");
-});
+[`TransparentProxy.rules`]()
 
-// Close proxy
-setTimeout(() => {
-    proxy.close()
-    console.log('proxy stopped')
-},1000*1)
+## [Methods]()
 
-```
+[`TransparentProxy.enableProxy()`]()
+
+[`TransparentProxy.disableProxy()`]()
+
+[`TransparentProxy.createCert()`]()
+
+[`TransparentProxy.createCA()`]()
+
+[`TransparentProxy.use()`]()
+
+[`TransparentProxy.listen()`]()
+
+[`TransparentProxy.close()`]()
+
+# Global
+
+## [See also]()
+
+-   See also
