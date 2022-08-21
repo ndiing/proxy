@@ -1,20 +1,20 @@
 # EventEmitter
 
-<!-- Description -->
+Description
 
 
 
 
 ## [Methods]()
 
-<!-- _Description_ -->
+_Description_
 
-[`on()`]()
+[`on()`](./docs/on.md)
 
-<!-- Description -->
-[`emit()`]()
 
-<!-- Description -->
+[`emit()`](./docs/emit.md)
+
+
 
 
 
@@ -27,14 +27,16 @@
 <!--  -->
 <!-- Description -->
 <!--  -->
+
 <!-- ## [Example]() -->
 <!--  -->
 <!-- ### [Title]() -->
 <!--  -->
 <!-- Description -->
+
 # Database
 
-<!-- Description -->
+Description
 
 
 
@@ -51,31 +53,33 @@
 <!--  -->
 <!-- Description -->
 <!--  -->
+
 <!-- ## [Example]() -->
 <!--  -->
 <!-- ### [Title]() -->
 <!--  -->
 <!-- Description -->
+
 # TransparentProxy
 
-<!-- Description -->
+Description
 
 
 
 
 ## [Methods]()
 
-<!-- _Description_ -->
+_Description_
 
-[`use()`]()
+[`use()`](./docs/use.md)
 
-<!-- Description -->
-[`listen()`]()
 
-<!-- Description -->
-[`close()`]()
+[`listen()`](./docs/listen.md)
 
-<!-- Description -->
+
+[`close()`](./docs/close.md)
+
+
 
 
 
@@ -88,11 +92,13 @@
 <!--  -->
 <!-- Description -->
 <!--  -->
+
 <!-- ## [Example]() -->
 <!--  -->
 <!-- ### [Title]() -->
 <!--  -->
 <!-- Description -->
+
 
 ## [See also]()
 
