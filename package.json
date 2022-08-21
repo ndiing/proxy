@@ -5,7 +5,7 @@
     "regedit": "^5.1.1"
   },
   "name": "@ndiinginc/proxy",
-  "description": "nodejs transparent/inline/intercepting/debugging proxy",
+  "description": "Nodejs transparent proxy",
   "version": "1.0.1",
   "main": "index.js",
   "devDependencies": {},

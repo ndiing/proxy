@@ -18,7 +18,9 @@
 [`EventEmitter#on(eventName,listener)`](./docs/event-emitter/on.md)
 
 
+
 [`EventEmitter#emit(eventName,args)`](./docs/event-emitter/emit.md)
+
 
 
 <!-- methods -->
@@ -40,7 +42,9 @@
 [`Database#docs`](./docs/database/docs.md)
 
 
+
 [`Database#id`](./docs/database/id.md)
+
 
 
 <!-- properties -->
@@ -55,10 +59,13 @@
 [`Database#post(doc)`](./docs/database/post.md)
 
 
+
 [`Database#get(_id)`](./docs/database/get.md)
 
 
+
 [`Database#patch(_id,doc)`](./docs/database/patch.md)
+
 
 
 <!-- methods -->
@@ -86,10 +93,13 @@
 [`TransparentProxy#use(args)`](./docs/transparent-proxy/use.md)
 
 
+
 [`TransparentProxy#listen(port,hostname,backlog)`](./docs/transparent-proxy/listen.md)
 
 
+
 [`TransparentProxy#close()`](./docs/transparent-proxy/close.md)
+
 
 
 <!-- methods -->
