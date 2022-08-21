@@ -14,9 +14,7 @@ patch(_id,doc);
 ### Parameters
 
 - `_id`
-
 - `doc`
-
 <!-- parameters -->
 
 <!-- return -->

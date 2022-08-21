@@ -14,7 +14,6 @@ get(_id);
 ### Parameters
 
 - `_id`
-
 <!-- parameters -->
 
 <!-- return -->

@@ -14,9 +14,7 @@ emit(eventName,args);
 ### Parameters
 
 - `eventName`
-
 - `args`
-
 <!-- parameters -->
 
 <!-- return -->

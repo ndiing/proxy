@@ -14,9 +14,7 @@ on(eventName,listener);
 ### Parameters
 
 - `eventName`
-
 - `listener`
-
 <!-- parameters -->
 
 <!-- return -->
