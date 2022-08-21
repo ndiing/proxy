@@ -1,36 +1,98 @@
 # EventEmitter
 
+<!-- Description -->
+
+
+
+
 ## [Methods]()
 
-[`EventEmitter.on()`]()
+<!-- _Description_ -->
 
-[`EventEmitter.emit()`]()
+[`on()`]()
 
+<!-- Description -->
+[`emit()`]()
+
+<!-- Description -->
+
+
+
+
+<!-- ## [Events]() -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- [`eventName`]() event -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- ## [Example]() -->
+<!--  -->
+<!-- ### [Title]() -->
+<!--  -->
+<!-- Description -->
 # Database
 
+<!-- Description -->
+
+
+
+
+
+
+
+
+<!-- ## [Events]() -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- [`eventName`]() event -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- ## [Example]() -->
+<!--  -->
+<!-- ### [Title]() -->
+<!--  -->
+<!-- Description -->
 # TransparentProxy
 
-## [Properties]()
+<!-- Description -->
 
-[`TransparentProxy.rules`]()
+
+
 
 ## [Methods]()
 
-[`TransparentProxy.use()`]()
+<!-- _Description_ -->
 
-[`TransparentProxy.listen()`]()
+[`use()`]()
 
-[`TransparentProxy.close()`]()
+<!-- Description -->
+[`listen()`]()
 
-## [Static methods]()
+<!-- Description -->
+[`close()`]()
 
-[`TransparentProxy.enableProxy()`]()
+<!-- Description -->
 
-[`TransparentProxy.disableProxy()`]()
 
-[`TransparentProxy.createCert()`]()
 
-[`TransparentProxy.createCA()`]()
+
+<!-- ## [Events]() -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- [`eventName`]() event -->
+<!--  -->
+<!-- Description -->
+<!--  -->
+<!-- ## [Example]() -->
+<!--  -->
+<!-- ### [Title]() -->
+<!--  -->
+<!-- Description -->
 
 ## [See also]()
 
