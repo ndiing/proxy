@@ -1,10 +1,12 @@
 # EventEmitter
 
-# Database
-
-## [Properties]()
-
 ## [Methods]()
+
+[`EventEmitter.on()`]()
+
+[`EventEmitter.emit()`]()
+
+# Database
 
 # TransparentProxy
 
@@ -19,6 +21,16 @@
 [`TransparentProxy.listen()`]()
 
 [`TransparentProxy.close()`]()
+
+## [Static methods]()
+
+[`TransparentProxy.enableProxy()`]()
+
+[`TransparentProxy.disableProxy()`]()
+
+[`TransparentProxy.createCert()`]()
+
+[`TransparentProxy.createCA()`]()
 
 ## [See also]()
 
