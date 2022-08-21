@@ -10,40 +10,40 @@
 <!-- _Methods._ -->
 
 
-### EventEmitter#on()
+## EventEmitter#on()
 
 
 
-#### [Syntax]()
+### [Syntax]()
 
     on(eventName,listener)
 
-##### [Parameters]()
+#### [Parameters]()
 
 name|type|defaultvalue
 ---|---|---
 eventName|`*`|
 listener|`*`|
 
-##### [Return value]()
+#### [Return value]()
 
 
-### EventEmitter#emit()
+## EventEmitter#emit()
 
 
 
-#### [Syntax]()
+### [Syntax]()
 
     emit(eventName,args)
 
-##### [Parameters]()
+#### [Parameters]()
 
 name|type|defaultvalue
 ---|---|---
 eventName|`*`|
 args|`any`|
 
-##### [Return value]()
+#### [Return value]()
 
 
 # Database
@@ -93,32 +93,32 @@ args|`any`|
 <!-- _Methods._ -->
 
 
-### TransparentProxy#use()
+## TransparentProxy#use()
 
 
 
-#### [Syntax]()
+### [Syntax]()
 
     use(args)
 
-##### [Parameters]()
+#### [Parameters]()
 
 name|type|defaultvalue
 ---|---|---
 args|`any`|
 
-##### [Return value]()
+#### [Return value]()
 
 
-### TransparentProxy#listen()
+## TransparentProxy#listen()
 
 
 
-#### [Syntax]()
+### [Syntax]()
 
     listen(port,hostname,backlog)
 
-##### [Parameters]()
+#### [Parameters]()
 
 name|type|defaultvalue
 ---|---|---
@@ -126,24 +126,24 @@ port|`*`|
 hostname|`*`|
 backlog|`*`|
 
-##### [Return value]()
+#### [Return value]()
 
 `Any`
 
-### TransparentProxy#close()
+## TransparentProxy#close()
 
 
 
-#### [Syntax]()
+### [Syntax]()
 
     close()
 
-##### [Parameters]()
+#### [Parameters]()
 
 name|type|defaultvalue
 ---|---|---
 
-##### [Return value]()
+#### [Return value]()
 
 
 # 
