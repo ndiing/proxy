@@ -11,6 +11,12 @@ on(eventName,listener);
 ```
 
 <!-- parameters -->
+### Parameters
+
+- `eventName`
+
+- `listener`
+
 <!-- parameters -->
 
 <!-- return -->

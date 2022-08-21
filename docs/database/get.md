@@ -11,6 +11,10 @@ get(_id);
 ```
 
 <!-- parameters -->
+### Parameters
+
+- `_id`
+
 <!-- parameters -->
 
 <!-- return -->
