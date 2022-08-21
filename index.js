@@ -19,24 +19,11 @@ process.on("unhandledRejection", (err) => {
     console.log(err);
 });
 
-/**
- * 
- */
 class EventEmitter extends events {
-    /**
-     * 
-     * @param {*} eventName 
-     * @param {*} listener 
-     */
     on(eventName, listener) {
         super.on(eventName.source || eventName, listener);
     }
 
-    /**
-     * 
-     * @param {*} eventName 
-     * @param  {any} args 
-     */
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
         for (const _eventName in this._events) {
@@ -47,9 +34,6 @@ class EventEmitter extends events {
     }
 }
 
-/**
- * 
- */
 class Database extends EventEmitter {
     docs = [];
     _id = -1;
@@ -82,20 +66,9 @@ class Database extends EventEmitter {
     }
 }
 
-/**
- * 
- */
 class TransparentProxy {
-    /**
-     * 
-    */
     rules = [];
 
-    /**
-     * 
-     * @param {*} options 
-     * @returns {Any}
-     */
     static enableProxy(options = {}) {
         return regedit
             .putValue({
@@ -108,10 +81,6 @@ class TransparentProxy {
             .catch(() => {});
     }
 
-    /**
-     * 
-     * @returns {Any}
-     */
     static disableProxy() {
         return regedit
             .putValue({
@@ -124,12 +93,6 @@ class TransparentProxy {
             .catch(() => {});
     }
 
-    /**
-     * 
-     * @param {*} domain 
-     * @param {*} ca 
-     * @returns {Any}
-     */
     static createCert(domain, ca) {
         return mkcert.createCert({
             domains: ["127.0.0.1", "localhost", domain],
@@ -139,10 +102,6 @@ class TransparentProxy {
         });
     }
 
-    /**
-     * 
-     * @returns {Any}
-     */
     static async createCA() {
         let ca = {};
         try {
@@ -200,10 +159,6 @@ class TransparentProxy {
         this.rules.push({ method, path, callback, regexp });
     }
 
-    /**
-     * 
-     * @param  {any} args 
-     */
     use(...args) {
         this.add(".*", ...args);
     }
@@ -425,13 +380,6 @@ class TransparentProxy {
         cb(err, ctx);
     }
 
-    /**
-     * 
-     * @param {*} port 
-     * @param {*} hostname 
-     * @param {*} backlog 
-     * @returns {Any}
-     */
     async listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
@@ -467,9 +415,6 @@ class TransparentProxy {
         return this.httpServer;
     }
 
-    /**
-     * 
-     */
     async close() {
         this.httpServer.close();
         this.httpServer = null;
