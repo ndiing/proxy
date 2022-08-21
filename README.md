@@ -25,8 +25,6 @@ name|type|defaultvalue
 eventName|`*`|
 listener|`*`|
 
-#### [Return value]()
-
 
 ## EventEmitter#emit()
 
@@ -42,8 +40,6 @@ name|type|defaultvalue
 ---|---|---
 eventName|`*`|
 args|`any`|
-
-#### [Return value]()
 
 
 # Database
@@ -107,8 +103,6 @@ name|type|defaultvalue
 ---|---|---
 args|`any`|
 
-#### [Return value]()
-
 
 ## TransparentProxy#listen()
 
@@ -138,12 +132,6 @@ backlog|`*`|
 
     close()
 
-#### [Parameters]()
-
-name|type|defaultvalue
----|---|---
-
-#### [Return value]()
 
 
 # 
