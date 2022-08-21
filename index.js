@@ -19,11 +19,20 @@ process.on("unhandledRejection", (err) => {
     console.log(err);
 });
 
+/**
+ *
+ */
 class EventEmitter extends events {
+    /**
+     *
+     */
     on(eventName, listener) {
         super.on(eventName.source || eventName, listener);
     }
 
+    /**
+     *
+     */
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
         for (const _eventName in this._events) {
@@ -34,24 +43,42 @@ class EventEmitter extends events {
     }
 }
 
+/**
+ *
+ */
 class Database extends EventEmitter {
+    /**
+     *
+     */
     docs = [];
     _id = -1;
 
+    /**
+     *
+     */
     get id() {
         return ++this._id;
     }
 
+    /**
+     *
+     */
     post(doc = {}) {
         doc._id = this.id;
         this.docs[doc._id] = doc;
         return { _id: doc._id };
     }
 
+    /**
+     *
+     */
     get(_id) {
         return this.docs[_id];
     }
 
+    /**
+     *
+     */
     patch(_id, doc = {}) {
         let oldDoc = this.get(_id);
 
@@ -66,9 +93,15 @@ class Database extends EventEmitter {
     }
 }
 
+/**
+ *
+ */
 class TransparentProxy {
     rules = [];
 
+    /**
+     *
+     */
     static enableProxy(options = {}) {
         return regedit
             .putValue({
@@ -81,6 +114,9 @@ class TransparentProxy {
             .catch(() => {});
     }
 
+    /**
+     *
+     */
     static disableProxy() {
         return regedit
             .putValue({
@@ -93,6 +129,9 @@ class TransparentProxy {
             .catch(() => {});
     }
 
+    /**
+     *
+     */
     static createCert(domain, ca) {
         return mkcert.createCert({
             domains: ["127.0.0.1", "localhost", domain],
@@ -102,6 +141,9 @@ class TransparentProxy {
         });
     }
 
+    /**
+     *
+     */
     static async createCA() {
         let ca = {};
         try {
@@ -124,6 +166,9 @@ class TransparentProxy {
         return ca;
     }
 
+    /**
+     *
+     */
     constructor() {
         this.database = new Database();
         this.handleSocketError = this.handleSocketError.bind(this);
@@ -159,6 +204,9 @@ class TransparentProxy {
         this.rules.push({ method, path, callback, regexp });
     }
 
+    /**
+     *
+     */
     use(...args) {
         this.add(".*", ...args);
     }
@@ -380,6 +428,9 @@ class TransparentProxy {
         cb(err, ctx);
     }
 
+    /**
+     *
+     */
     async listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
@@ -415,6 +466,9 @@ class TransparentProxy {
         return this.httpServer;
     }
 
+    /**
+     *
+     */
     async close() {
         this.httpServer.close();
         this.httpServer = null;

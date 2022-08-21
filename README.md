@@ -2,140 +2,98 @@
 # EventEmitter
 
 
+<!-- examples -->
+<!-- examples -->
+
+<!-- properties -->
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+## Methods
 
 
-
-## [Methods]()
-
-<!-- _Methods._ -->
+[`EventEmitter#on(eventName,listener)`](./docs/event-emitter/on.md)
 
 
-## EventEmitter#on()
+[`EventEmitter#emit(eventName,args)`](./docs/event-emitter/emit.md)
 
 
+<!-- methods -->
 
-### [Syntax]()
-
-    on(eventName,listener)
-
-#### [Parameters]()
-
-name|type|defaultvalue
----|---|---
-eventName|`*`|
-listener|`*`|
-
-
-## EventEmitter#emit()
-
-
-
-### [Syntax]()
-
-    emit(eventName,args)
-
-#### [Parameters]()
-
-name|type|defaultvalue
----|---|---
-eventName|`*`|
-args|`any`|
+<!-- staticmethods -->
+<!-- staticmethods -->
 
 
 # Database
 
 
+<!-- examples -->
+<!-- examples -->
+
+<!-- properties -->
+## Properties
 
 
-
-# rules
-
+[`Database#docs`](./docs/database/docs.md)
 
 
+[`Database#id`](./docs/database/id.md)
 
 
-# enableProxy
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+## Methods
 
 
+[`Database#post(doc)`](./docs/database/post.md)
 
 
-
-# disableProxy
-
+[`Database#get(_id)`](./docs/database/get.md)
 
 
+[`Database#patch(_id,doc)`](./docs/database/patch.md)
 
 
-# createCert
+<!-- methods -->
 
-
-
-
-
-# createCA
-
-
-
+<!-- staticmethods -->
+<!-- staticmethods -->
 
 
 # TransparentProxy
 
 
+<!-- examples -->
+<!-- examples -->
+
+<!-- properties -->
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+## Methods
 
 
-
-## [Methods]()
-
-<!-- _Methods._ -->
+[`TransparentProxy#use(args)`](./docs/transparent-proxy/use.md)
 
 
-## TransparentProxy#use()
+[`TransparentProxy#listen(port,hostname,backlog)`](./docs/transparent-proxy/listen.md)
 
 
-
-### [Syntax]()
-
-    use(args)
-
-#### [Parameters]()
-
-name|type|defaultvalue
----|---|---
-args|`any`|
+[`TransparentProxy#close()`](./docs/transparent-proxy/close.md)
 
 
-## TransparentProxy#listen()
+<!-- methods -->
 
-
-
-### [Syntax]()
-
-    listen(port,hostname,backlog)
-
-#### [Parameters]()
-
-name|type|defaultvalue
----|---|---
-port|`*`|
-hostname|`*`|
-backlog|`*`|
-
-#### [Return value]()
-
-`Any`
-
-## TransparentProxy#close()
-
-
-
-### [Syntax]()
-
-    close()
-
-
-
-# 
-
-
-
+<!-- staticmethods -->
+<!-- staticmethods -->
 
