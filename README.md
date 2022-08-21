@@ -1,116 +1,153 @@
-## Classes
 
-<dl>
-<dt><a href="#EventEmitter">EventEmitter</a></dt>
-<dd></dd>
-<dt><a href="#Database">Database</a></dt>
-<dd></dd>
-<dt><a href="#TransparentProxy">TransparentProxy</a></dt>
-<dd></dd>
-</dl>
+# EventEmitter
 
-<a name="EventEmitter"></a>
 
-## EventEmitter
-**Kind**: global class  
 
-* [EventEmitter](#EventEmitter)
-    * [.on(eventName, listener)](#EventEmitter+on)
-    * [.emit(eventName, ...args)](#EventEmitter+emit)
 
-<a name="EventEmitter+on"></a>
 
-### eventEmitter.on(eventName, listener)
-**Kind**: instance method of [<code>EventEmitter</code>](#EventEmitter)  
+## [Methods]()
 
-| Param | Type |
-| --- | --- |
-| eventName | <code>\*</code> | 
-| listener | <code>\*</code> | 
+<!-- _Methods._ -->
 
-<a name="EventEmitter+emit"></a>
 
-### eventEmitter.emit(eventName, ...args)
-**Kind**: instance method of [<code>EventEmitter</code>](#EventEmitter)  
+### EventEmitter#on()
 
-| Param | Type |
-| --- | --- |
-| eventName | <code>\*</code> | 
-| ...args | <code>any</code> | 
 
-<a name="Database"></a>
 
-## Database
-**Kind**: global class  
-<a name="TransparentProxy"></a>
+#### [Syntax]()
 
-## TransparentProxy
-**Kind**: global class  
+    on(eventName,listener)
 
-* [TransparentProxy](#TransparentProxy)
-    * _instance_
-        * [.rules](#TransparentProxy+rules)
-        * [.use(...args)](#TransparentProxy+use)
-        * [.listen(port, hostname, backlog)](#TransparentProxy+listen) ⇒ <code>Any</code>
-        * [.close()](#TransparentProxy+close)
-    * _static_
-        * [.enableProxy(options)](#TransparentProxy.enableProxy) ⇒ <code>Any</code>
-        * [.disableProxy()](#TransparentProxy.disableProxy) ⇒ <code>Any</code>
-        * [.createCert(domain, ca)](#TransparentProxy.createCert) ⇒ <code>Any</code>
-        * [.createCA()](#TransparentProxy.createCA) ⇒ <code>Any</code>
+##### [Parameters]()
 
-<a name="TransparentProxy+rules"></a>
+name|type|defaultvalue
+---|---|---
+eventName|`*`|
+listener|`*`|
 
-### transparentProxy.rules
-**Kind**: instance property of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy+use"></a>
+##### [Return value]()
 
-### transparentProxy.use(...args)
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
 
-| Param | Type |
-| --- | --- |
-| ...args | <code>any</code> | 
+### EventEmitter#emit()
 
-<a name="TransparentProxy+listen"></a>
 
-### transparentProxy.listen(port, hostname, backlog) ⇒ <code>Any</code>
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
 
-| Param | Type |
-| --- | --- |
-| port | <code>\*</code> | 
-| hostname | <code>\*</code> | 
-| backlog | <code>\*</code> | 
+#### [Syntax]()
 
-<a name="TransparentProxy+close"></a>
+    emit(eventName,args)
 
-### transparentProxy.close()
-**Kind**: instance method of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy.enableProxy"></a>
+##### [Parameters]()
 
-### TransparentProxy.enableProxy(options) ⇒ <code>Any</code>
-**Kind**: static method of [<code>TransparentProxy</code>](#TransparentProxy)  
+name|type|defaultvalue
+---|---|---
+eventName|`*`|
+args|`any`|
 
-| Param | Type |
-| --- | --- |
-| options | <code>\*</code> | 
+##### [Return value]()
 
-<a name="TransparentProxy.disableProxy"></a>
 
-### TransparentProxy.disableProxy() ⇒ <code>Any</code>
-**Kind**: static method of [<code>TransparentProxy</code>](#TransparentProxy)  
-<a name="TransparentProxy.createCert"></a>
+# Database
 
-### TransparentProxy.createCert(domain, ca) ⇒ <code>Any</code>
-**Kind**: static method of [<code>TransparentProxy</code>](#TransparentProxy)  
 
-| Param | Type |
-| --- | --- |
-| domain | <code>\*</code> | 
-| ca | <code>\*</code> | 
 
-<a name="TransparentProxy.createCA"></a>
 
-### TransparentProxy.createCA() ⇒ <code>Any</code>
-**Kind**: static method of [<code>TransparentProxy</code>](#TransparentProxy)  
+
+# rules
+
+
+
+
+
+# enableProxy
+
+
+
+
+
+# disableProxy
+
+
+
+
+
+# createCert
+
+
+
+
+
+# createCA
+
+
+
+
+
+# TransparentProxy
+
+
+
+
+
+## [Methods]()
+
+<!-- _Methods._ -->
+
+
+### TransparentProxy#use()
+
+
+
+#### [Syntax]()
+
+    use(args)
+
+##### [Parameters]()
+
+name|type|defaultvalue
+---|---|---
+args|`any`|
+
+##### [Return value]()
+
+
+### TransparentProxy#listen()
+
+
+
+#### [Syntax]()
+
+    listen(port,hostname,backlog)
+
+##### [Parameters]()
+
+name|type|defaultvalue
+---|---|---
+port|`*`|
+hostname|`*`|
+backlog|`*`|
+
+##### [Return value]()
+
+`Any`
+
+### TransparentProxy#close()
+
+
+
+#### [Syntax]()
+
+    close()
+
+##### [Parameters]()
+
+name|type|defaultvalue
+---|---|---
+
+##### [Return value]()
+
+
+# 
+
+
+
+
