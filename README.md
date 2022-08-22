@@ -4,6 +4,22 @@
 npm install @ndiinginc/proxy
 ```
 
+## Global
+
+<!-- properties -->
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+<!-- methods -->
+
+<!-- staticmethods -->
+<!-- staticmethods -->
+
+<!-- examples -->
+<!-- examples -->
 ## EventEmitter
 
 <!-- properties -->
@@ -52,70 +68,6 @@ npm install @ndiinginc/proxy
     <dt><code><a href="./docs/database/patch.md">Database#patch()</a></code></dt>
     <dd></dd>
 </dl>
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-## enableProxy
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-## disableProxy
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-## createCert
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-## createCA
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
 <!-- methods -->
 
 <!-- staticmethods -->
