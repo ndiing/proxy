@@ -1,21 +1,20 @@
-# EventEmitter#emit()
+## EventEmitter#emit()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-emit(eventName,args);
+### Syntax
+```
+emit(eventName,args)
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+    <dt><code>eventName</code></dt>
+    <dt><code>args</code></dt>
+</dl>
 
-- `eventName`
-- `args`
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

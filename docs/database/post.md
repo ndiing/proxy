@@ -1,20 +1,19 @@
-# Database#post()
+## Database#post()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-post(doc);
+### Syntax
+```
+post(doc)
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+    <dt><code>doc</code></dt>
+</dl>
 
-- `doc`
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

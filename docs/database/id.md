@@ -1,19 +1,18 @@
-# Database#id()
+## Database#id()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-id();
+### Syntax
+```
+id()
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+</dl>
 
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

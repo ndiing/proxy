@@ -1,20 +1,19 @@
-# Database#get()
+## Database#get()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-get(_id);
+### Syntax
+```
+get(_id)
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+    <dt><code>_id</code></dt>
+</dl>
 
-- `_id`
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

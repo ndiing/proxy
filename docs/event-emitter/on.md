@@ -1,21 +1,20 @@
-# EventEmitter#on()
+## EventEmitter#on()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-on(eventName,listener);
+### Syntax
+```
+on(eventName,listener)
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+    <dt><code>eventName</code></dt>
+    <dt><code>listener</code></dt>
+</dl>
 
-- `eventName`
-- `listener`
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

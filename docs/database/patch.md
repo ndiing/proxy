@@ -1,21 +1,20 @@
-# Database#patch()
+## Database#patch()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-patch(_id,doc);
+### Syntax
+```
+patch(_id,doc)
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+    <dt><code>_id</code></dt>
+    <dt><code>doc</code></dt>
+</dl>
 
-- `_id`
-- `doc`
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+

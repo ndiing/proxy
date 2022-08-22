@@ -1,19 +1,18 @@
-# Database#docs()
+## Database#docs()
 
-
-<!-- examples -->
-<!-- examples -->
-
-## Syntax
-
-```js
-docs();
+### Syntax
+```
+docs()
 ```
 
-<!-- parameters -->
 ### Parameters
+<dl>
+</dl>
 
-<!-- parameters -->
+### Return value
 
-<!-- return -->
-<!-- return -->
+<dl>
+    <dt>None <code>undefined</code></dt>
+</dl>
+
+
