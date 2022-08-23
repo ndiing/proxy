@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@ndiinginc/fetch": "^1.0.0",
+    "@ndiinginc/fetch": "^1.0.12",
     "mkcert": "^1.5.1",
     "regedit": "^5.1.1"
   },
