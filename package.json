@@ -6,7 +6,7 @@
   },
   "name": "@ndiinginc/proxy",
   "description": "Nodejs transparent proxy",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.js",
   "devDependencies": {},
   "scripts": {
