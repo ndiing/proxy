@@ -171,6 +171,8 @@ class TransparentProxy {
      */
     constructor() {
         this.database = new Database();
+        this.listen = this.listen.bind(this);
+        this.close = this.close.bind(this);
         this.handleSocketError = this.handleSocketError.bind(this);
         this.handleServerError = this.handleServerError.bind(this);
         this.handleServerUpgrade = this.handleServerUpgrade.bind(this);
@@ -431,7 +433,7 @@ class TransparentProxy {
     /**
      *
      */
-    async listen(port, hostname, backlog) {
+    listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
             hostname = undefined;
@@ -442,7 +444,7 @@ class TransparentProxy {
         port = port || 8888;
         this.port = port;
 
-        await TransparentProxy.enableProxy({
+        TransparentProxy.enableProxy({
             hostname,
             port,
         });
@@ -469,15 +471,29 @@ class TransparentProxy {
     /**
      *
      */
-    async close() {
+    close() {
         this.httpServer.close();
         this.httpServer = null;
 
         this.httpsServer.close();
         this.httpsServer = null;
 
-        await TransparentProxy.disableProxy();
+        TransparentProxy.disableProxy();
     }
 }
 
 module.exports = TransparentProxy;
+
+// //
+// const proxy = new TransparentProxy();
+
+// //
+// const server=proxy.listen(8888, () => {
+//     console.log('proxy started')
+//     console.log(server.address());
+// });
+
+// setTimeout(() => {
+//     proxy.close()
+//     console.log('proxy stopped')
+// },1000)
