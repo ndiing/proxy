@@ -4,10 +4,6 @@
 npm install @ndiinginc/proxy
 ```
 
-
-<!-- examples -->
-<!-- examples -->
-
 ## EventEmitter
 
 <!-- constructor -->
@@ -34,7 +30,6 @@ npm install @ndiinginc/proxy
 
 <!-- examples -->
 <!-- examples -->
-
 ## Database
 
 <!-- constructor -->
@@ -70,7 +65,6 @@ npm install @ndiinginc/proxy
 
 <!-- examples -->
 <!-- examples -->
-
 ## TransparentProxy
 
 <!-- constructor -->
@@ -96,3 +90,6 @@ npm install @ndiinginc/proxy
 
 <!-- staticmethods -->
 <!-- staticmethods -->
+
+<!-- examples -->
+<!-- examples -->
