@@ -9,12 +9,13 @@ const events = require("events");
 const { promisify } = require("util");
 const { exec } = require("child_process");
 const regedit = require("regedit").promisified;
-const mkcert = require("mkcert");
+const forge = require("node-forge");
 const { URL2, Headers } = require("@ndiinginc/fetch");
 
 process.on("uncaughtException", (err) => {
     console.log(err);
 });
+
 process.on("unhandledRejection", (err) => {
     console.log(err);
 });
@@ -35,6 +36,7 @@ class EventEmitter extends events {
      */
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
+
         for (const _eventName in this._events) {
             if (new RegExp(`^${_eventName}$`).test(eventName) && _eventName !== eventName) {
                 super.emit(_eventName, eventName, ...args);
@@ -94,11 +96,97 @@ class Database extends EventEmitter {
 }
 
 /**
+ * Create self-signed certificate and certificate authority using `node-forge`
+ */
+class Certificate {
+    /**
+     * @property {String} countryName=ID
+     * @property {String} organizationName=Ndiing
+     * @property {String} ST=Jatim
+     * @property {String} OU=Pacitan
+     */
+    static defaultAttrs = [
+        { name: "countryName", value: "ID" },
+        { name: "organizationName", value: "Ndiing" },
+        { shortName: "ST", value: "Jatim" },
+        { shortName: "OU", value: "Pacitan" },
+    ];
+
+    /**
+     *
+     * @param {String} serialNumber - certificate serial number
+     * @returns {Object}
+     * @private
+     */
+    static createCertificate(serialNumber) {
+        const keys = forge.pki.rsa.generateKeyPair(2048);
+        const cert = forge.pki.createCertificate();
+
+        cert.publicKey = keys.publicKey;
+        cert.serialNumber = serialNumber || Math.floor(Math.random() * 100000) + "";
+        cert.validity.notBefore = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        cert.validity.notAfter = new Date(Date.now() + 824 * 24 * 60 * 60 * 1000);
+
+        return { keys, cert };
+    }
+
+    /**
+     *
+     * @param {String} commonName - server name
+     * @returns {Object}
+     */
+    static createCertificateAuthority(commonName) {
+        const { keys, cert } = this.createCertificate();
+        const attrs = this.defaultAttrs.concat([{ name: "commonName", value: commonName || "CertManager" }]);
+
+        cert.setSubject(attrs);
+        cert.setIssuer(attrs);
+        cert.setExtensions([{ name: "basicConstraints", cA: true }]);
+        cert.sign(keys.privateKey, forge.md.sha256.create());
+
+        return {
+            key: forge.pki.privateKeyToPem(keys.privateKey),
+            cert: forge.pki.certificateToPem(cert),
+        };
+    }
+
+    /**
+     *
+     * @param {String} domain - ip/domain
+     * @param {Object} config - certificate autority config {key,value}
+     * @returns {Object}
+     */
+    static createSelfSignedCertificate(domain, config) {
+        const md = forge.md.md5.create();
+        md.update(domain);
+
+        const { keys, cert } = this.createCertificate(md.digest().toHex());
+        const caCert = forge.pki.certificateFromPem(config.cert);
+        const caKey = forge.pki.privateKeyFromPem(config.key);
+
+        const attrs = this.defaultAttrs.concat([{ name: "commonName", value: domain }]);
+        const altNames = /^\d+?\.\d+?\.\d+?\.\d+?$/.test(domain) ? [{ type: 7, ip: domain }] : [{ type: 2, value: domain }];
+        const extensions = [
+            { name: "basicConstraints", cA: false },
+            { name: "subjectAltName", altNames },
+        ];
+
+        cert.setIssuer(caCert.subject.attributes);
+        cert.setSubject(attrs);
+        cert.setExtensions(extensions);
+        cert.sign(caKey, forge.md.sha256.create());
+
+        return {
+            key: forge.pki.privateKeyToPem(keys.privateKey),
+            cert: forge.pki.certificateToPem(cert),
+        };
+    }
+}
+
+/**
  *
  */
-class TransparentProxy {
-    rules = [];
-
+class Regedit {
     /**
      *
      */
@@ -128,35 +216,67 @@ class TransparentProxy {
             })
             .catch(() => {});
     }
+}
+
+/**
+ * @example
+ * // Create transparent rpoxy
+ * const proxy = new TransparentProxy();
+ *
+ * // Listen request&response events
+ * proxy.database.on('request,.*', (eventName, req) => {
+ *     console.log(req.method, req.href);
+ * });
+ * proxy.database.on('response,.*', (eventName, res) => {
+ *     console.log(res.status);
+ * });
+ *
+ * // Start server
+ * const server = proxy.listen(8888, () => {
+ *     console.log("proxy started");
+ *     console.log(server.address());
+ * });
+ *
+ * // Intercept request&response
+ * proxy.use('https://jsonplaceholder.typicode.com/.*', (req,res,next) => {
+ *     // this method will call twice
+ *     // on before request
+ *     // and on before response
+ *     if(req){}
+ *     if(res){}
+ *     // when done call
+ *     next()
+ * })
+ * // or more spesific using method
+ * proxy.post('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {
+ *     // this method will call twice
+ *     // on before request
+ *     // and on before response
+ *     if(req){}
+ *     if(res){}
+ *     // when done call
+ *     next()
+ * })
+ *
+ * // Stop server
+ * setTimeout(() => {
+ *     proxy.close();
+ *     console.log("proxy stopped");
+ * }, 2000);
+ */
+class TransparentProxy {
+    rules = [];
 
     /**
      *
      */
-    static createCert(domain, ca) {
-        return mkcert.createCert({
-            domains: ["127.0.0.1", "localhost", domain],
-            validityDays: 365,
-            caKey: ca.key,
-            caCert: ca.cert,
-        });
-    }
-
-    /**
-     *
-     */
-    static async createCA() {
+    static async generateCertificateAuthority() {
         let ca = {};
         try {
             ca.key = fs.readFileSync("./ca.key");
             ca.cert = fs.readFileSync("./ca.crt");
         } catch (error) {
-            ca = await mkcert.createCA({
-                organization: "Ndiing CA",
-                countryCode: "ID",
-                state: "Jatim",
-                locality: "Pacitan",
-                validityDays: 365,
-            });
+            ca = Certificate.createCertificateAuthority();
 
             fs.writeFileSync("./ca.key", ca.key);
             fs.writeFileSync("./ca.crt", ca.cert);
@@ -171,8 +291,7 @@ class TransparentProxy {
      */
     constructor() {
         this.database = new Database();
-        this.listen = this.listen.bind(this);
-        this.close = this.close.bind(this);
+
         this.handleSocketError = this.handleSocketError.bind(this);
         this.handleServerError = this.handleServerError.bind(this);
         this.handleServerUpgrade = this.handleServerUpgrade.bind(this);
@@ -182,15 +301,12 @@ class TransparentProxy {
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
         this.SNICallback = this.SNICallback.bind(this);
-        // this.readRequest = this.readRequest.bind(this);
-        // this.writeRequest = this.writeRequest.bind(this);
-        // this.readResponse = this.readResponse.bind(this);
-        // this.writeResponse = this.writeResponse.bind(this);
 
         const methods = ["POST", "GET", "PATCH", "PUT", "DELETE"];
 
         for (let i = 0; i < methods.length; i++) {
             const method = methods[i];
+
             this[method.toLowerCase()] = (...args) => {
                 this.add(method, ...args);
             };
@@ -216,7 +332,8 @@ class TransparentProxy {
     handleConnection(socket) {}
 
     handleConnect(req, socket, head) {
-        const socketServer = net.connect(this.httpsServer.address().port, this.hostname, () => {
+        const { port, address } = this.httpsServer.address();
+        const socketServer = net.connect(port, address, () => {
             let message = "";
             message += "HTTP/1.1 200 OK\r\n";
             message += "\r\n";
@@ -233,25 +350,25 @@ class TransparentProxy {
 
     async handleRequest(req, res, head) {
         let { request, protocol, socket } = this.request(req, res);
-
         const doc = this.database.post();
         let callback;
+
         for (let i = 0; i < this.rules.length; i++) {
             const rule = this.rules[i];
             const passed = (rule.method == ".*" || rule.method == request.method) && rule.regexp.test(request.href);
+
             if (passed) {
                 callback = rule.callback;
                 break;
             }
         }
-
         this.readRequest(req, request, doc);
 
         if (callback) {
             request = await this.beforeRequest(request, doc, callback);
         }
-
         const reqServer = protocol.request(request);
+
         reqServer.on("error", this.handleServerError);
         reqServer.on("upgrade", this.handleServerUpgrade(socket, head));
         reqServer.on("response", this.handleServerResponse(doc, callback, res));
@@ -264,6 +381,7 @@ class TransparentProxy {
             request = await new Promise((resolve) => {
                 this.database.once(`request,${doc._id}`, resolve);
             });
+
             callback(request, null, () => {
                 this.writeRequest(request);
                 resolve(request);
@@ -282,14 +400,17 @@ class TransparentProxy {
         request.method = req.method;
         request.headers = new Headers(req.headers);
         request.body = req;
+
         return { request, protocol, socket };
     }
 
     response(resServer) {
         let response = {};
+
         response.body = resServer;
         response.status = resServer.statusCode;
         response.headers = new Headers(resServer.headers);
+
         return response;
     }
 
@@ -297,13 +418,11 @@ class TransparentProxy {
         return async (resServer) => {
             let response = this.response(resServer);
             const encoding = response.headers.get("content-encoding");
-
             this.readResponse(response, encoding, doc);
 
             if (callback) {
                 response = await this.beforeResponse(response, doc, callback, encoding);
             }
-
             res.writeHead(response.status, response.headers.entries());
             response.body.pipe(res);
         };
@@ -314,6 +433,7 @@ class TransparentProxy {
             response = await new Promise((resolve) => {
                 this.database.once(`response,${doc._id}`, resolve);
             });
+
             callback(null, response, () => {
                 this.writeResponse(response, encoding);
                 resolve(response);
@@ -344,9 +464,11 @@ class TransparentProxy {
 
     readRequest(req, request, doc) {
         let buffer = [];
+
         req.on("data", (chunk) => {
             buffer.push(chunk);
         });
+
         req.on("end", () => {
             let body = "" + Buffer.concat(buffer);
             request.body = body;
@@ -375,11 +497,12 @@ class TransparentProxy {
         } else if (encoding == "br") {
             readable = readable.pipe(zlib.createBrotliDecompress());
         }
-
         let buffer = [];
+
         readable.on("data", (chunk) => {
             buffer.push(chunk);
         });
+
         readable.on("end", () => {
             let body = "" + Buffer.concat(buffer);
             response.body = body;
@@ -421,12 +544,16 @@ class TransparentProxy {
         if (this.ctx[servername]) {
             ctx = this.ctx[servername];
         } else {
-            const ca = await TransparentProxy.createCA();
-            const cert = await TransparentProxy.createCert(servername, ca);
+            const ca = await TransparentProxy.generateCertificateAuthority();
+            const cert = Certificate.createSelfSignedCertificate(servername, ca);
+
+            // console.log(ca)
+            // console.log(cert)
+
             ctx = tls.createSecureContext(cert);
+
             this.ctx[servername] = ctx;
         }
-
         cb(err, ctx);
     }
 
@@ -439,19 +566,13 @@ class TransparentProxy {
             hostname = undefined;
         }
 
-        hostname = hostname || "127.0.0.1";
-        this.hostname = hostname;
         port = port || 8888;
-        this.port = port;
 
-        TransparentProxy.enableProxy({
-            hostname,
-            port,
-        });
-
+        Regedit.enableProxy({ hostname: "127.0.0.1", port });
         const SNICallback = this.SNICallback;
-        this.httpServer = http.createServer().listen(port, hostname, backlog);
-        this.httpsServer = https.createServer({ SNICallback }).listen(0, hostname);
+
+        this.httpServer = http.createServer().listen(port, "0.0.0.0", backlog);
+        this.httpsServer = https.createServer({ SNICallback }).listen(0, "0.0.0.0");
 
         this.httpServer.on("connection", this.handleConnection);
         this.httpServer.on("connect", this.handleConnect);
@@ -473,27 +594,18 @@ class TransparentProxy {
      */
     close() {
         this.httpServer.close();
-        this.httpServer = null;
-
         this.httpsServer.close();
+
+        this.httpServer = null;
         this.httpsServer = null;
 
-        TransparentProxy.disableProxy();
+        Regedit.disableProxy();
     }
 }
 
+TransparentProxy.EventEmitter = EventEmitter;
+TransparentProxy.Database = Database;
+TransparentProxy.Certificate = Certificate;
+TransparentProxy.Regedit = Regedit;
+
 module.exports = TransparentProxy;
-
-// //
-// const proxy = new TransparentProxy();
-
-// //
-// const server=proxy.listen(8888, () => {
-//     console.log('proxy started')
-//     console.log(server.address());
-// });
-
-// setTimeout(() => {
-//     proxy.close()
-//     console.log('proxy stopped')
-// },1000)

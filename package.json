@@ -1,14 +1,13 @@
 {
   "dependencies": {
     "@ndiinginc/fetch": "^1.0.12",
-    "mkcert": "^1.5.1",
+    "node-forge": "^1.3.1",
     "regedit": "^5.1.1"
   },
   "name": "@ndiinginc/proxy",
   "description": "Nodejs transparent proxy",
   "version": "1.0.4",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "exit 0"
   },
