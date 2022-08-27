@@ -1,14 +1,14 @@
-## TransparentProxy#use()
+## TransparentProxy#put()
 
 ### Syntax
 ```
-use(args)
+put(args)
 ```
 
 ### Parameters
 <dl>
     <dt><code>path</code></dt>
-    <dd>A <code>String/Function</code> path/callback</dd>
+    <dd>A <code>String</code> </dd>
     <dt><code>callback</code></dt>
     <dd>A <code>function</code> </dd>
 </dl>

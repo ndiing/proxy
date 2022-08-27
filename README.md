@@ -5,6 +5,7 @@ npm install @ndiinginc/proxy
 ```
 
 ## EventEmitter
+_Extended &#x60;EventEmitter&#x60; in flavor &#x60;RegExp&#x60;_
 
 <!-- constructor -->
 <!-- constructor -->
@@ -30,75 +31,9 @@ npm install @ndiinginc/proxy
 
 <!-- examples -->
 <!-- examples -->
-## Database
 
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-### Properties
-<dl>
-    <dt><code><a href="./docs/database/docs.md">Database#docs</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/database/id.md">Database#id</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-### Methods
-<dl>
-    <dt><code><a href="./docs/database/post.md">Database#post()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/database/get.md">Database#get()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/database/patch.md">Database#patch()</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-## Certificate
-_Create self-signed certificate and certificate authority using &#x60;node-forge&#x60;_
-
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-### Properties
-<dl>
-    <dt><code><a href="./docs/certificate/default-attrs.md">Certificate#defaultAttrs</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-### Static Methods
-<dl>
-    <dt><code><a href="./docs/certificate/create-certificate.md">Certificate.createCertificate()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/certificate/create-certificate-authority.md">Certificate.createCertificateAuthority()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/certificate/create-self-signed-certificate.md">Certificate.createSelfSignedCertificate()</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
+<!-- see -->
+<!-- see -->
 ## Regedit
 
 <!-- constructor -->
@@ -125,7 +60,11 @@ _Create self-signed certificate and certificate authority using &#x60;node-forge
 
 <!-- examples -->
 <!-- examples -->
-## TransparentProxy
+
+<!-- see -->
+<!-- see -->
+## Logger
+_Used in transparent proxy, for record request&amp;response while monitoring_
 
 <!-- constructor -->
 <!-- constructor -->
@@ -139,11 +78,13 @@ _Create self-signed certificate and certificate authority using &#x60;node-forge
 <!-- methods -->
 ### Methods
 <dl>
-    <dt><code><a href="./docs/transparent-proxy/use.md">TransparentProxy#use()</a></code></dt>
+    <dt><code><a href="./docs/logger/create.md">Logger#create()</a></code></dt>
     <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/listen.md">TransparentProxy#listen()</a></code></dt>
+    <dt><code><a href="./docs/logger/read.md">Logger#read()</a></code></dt>
     <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/close.md">TransparentProxy#close()</a></code></dt>
+    <dt><code><a href="./docs/logger/update.md">Logger#update()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/logger/delete.md">Logger#delete()</a></code></dt>
     <dd></dd>
 </dl>
 <!-- methods -->
@@ -154,7 +95,57 @@ _Create self-signed certificate and certificate authority using &#x60;node-forge
 <!-- examples -->
 ### Examples
 ```js
-// Create transparent rpoxyconst proxy = new TransparentProxy();// Listen request&response eventsproxy.database.on('request,.*', (eventName, req) => {    console.log(req.method, req.href);});proxy.database.on('response,.*', (eventName, res) => {    console.log(res.status);});// Start serverconst server = proxy.listen(8888, () => {    console.log("proxy started");    console.log(server.address());});// Intercept request&responseproxy.use('https://jsonplaceholder.typicode.com/.*', (req,res,next) => {    // this method will call twice    // on before request    // and on before response    if(req){}    if(res){}    // when done call    next()})// or more spesific using methodproxy.post('https://jsonplaceholder.typicode.com/posts', (req,res,next) => {    // this method will call twice    // on before request    // and on before response    if(req){}    if(res){}    // when done call    next()})// Stop serversetTimeout(() => {    proxy.close();    console.log("proxy stopped");}, 2000);
+// Usageconst log = new Logger()// Create initial `_id`var doc = log.create()console.log(doc)// Update when requestvar doc = log.update(doc._id,{request:{}})console.log(doc)// Update when responsevar doc = log.update(doc._id,{response:{}})console.log(doc)// Read request&respoonse docconsole.log(log.read(doc._id))
 ```
 
 <!-- examples -->
+
+<!-- see -->
+<!-- see -->
+## TransparentProxy
+_Fast proxy without redundancy, &#x60;Transparent proxy&#x60;. Also known as an &#x60;intercepting proxy&#x60;, &#x60;inline proxy&#x60;, or &#x60;forced proxy&#x60;, a transparent proxy intercepts normal application layer communication without requiring any special client configuration._
+
+<!-- constructor -->
+<!-- constructor -->
+
+<!-- properties -->
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+### Methods
+<dl>
+    <dt><code><a href="./docs/transparent-proxy/add.md">TransparentProxy#add()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/use.md">TransparentProxy#use()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/post.md">TransparentProxy#post()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/get.md">TransparentProxy#get()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/patch.md">TransparentProxy#patch()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/put.md">TransparentProxy#put()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/delete.md">TransparentProxy#delete()</a></code></dt>
+    <dd></dd>
+</dl>
+<!-- methods -->
+
+<!-- staticmethods -->
+<!-- staticmethods -->
+
+<!-- examples -->
+### Examples
+```js
+// Usage// Create proxy objectconst proxy = new TransparentProxy();// Event listener// Listen on request// proxy.log.on(/request,\d+/, console.log);// Listen on response// proxy.log.on(/response,\d+/, console.log);// Listen on request&response// proxy.log.on(/update,\d+/, console.log);// Start transparent proxy serverconst server = proxy.listen(8888, () => {    console.log("proxy listen", server.address());});// // Intercepting request&response// proxy.use("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {//     // callback will call twice on//     // before request//     if (req) console.log(req.method, req.url);//     // and before response//     if (res) console.log(res.status);//     next();// });// also you can use spesific methodproxy.get("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {    if (req) {        delete req.headers["if-none-match"];    }    if (res) {        res.body = JSON.stringify([]);    }    next();});// Stop proxy// setTimeout(() => {//     proxy.close();//     console.log("proxy close");// }, 2000);
+```
+
+<!-- examples -->
+
+<!-- see -->
+### See also
+- [Transparent proxy](https://en.wikipedia.org/wiki/Proxy_server#:~:text&#x3D;in%20web%20proxies.-,Transparent%20proxy,requiring%20any%20special%20client%20configuration.)
+<!-- see -->
