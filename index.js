@@ -571,6 +571,13 @@ class TransparentProxy {
         console.log(error);
     }
 
+    /**
+     * 
+     * @param {Number} port -
+     * @param {String} hostname -
+     * @param {Function} backlog 
+     * @returns {Object}
+     */
     listen(port, hostname, backlog) {
         if (typeof hostname == "function") {
             backlog = hostname;
@@ -602,6 +609,9 @@ class TransparentProxy {
         return this.httpServer;
     }
 
+    /**
+     * 
+     */
     close() {
         this.httpServer.close();
         this.httpServer = null;

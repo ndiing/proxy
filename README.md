@@ -131,6 +131,10 @@ _Fast proxy without redundancy, &#x60;Transparent proxy&#x60;. Also known as an 
     <dd></dd>
     <dt><code><a href="./docs/transparent-proxy/delete.md">TransparentProxy#delete()</a></code></dt>
     <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/listen.md">TransparentProxy#listen()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/transparent-proxy/close.md">TransparentProxy#close()</a></code></dt>
+    <dd></dd>
 </dl>
 <!-- methods -->
 
