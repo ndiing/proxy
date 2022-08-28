@@ -19,22 +19,22 @@ const execAsync = promisify(exec);
 class TransparentProxyError extends Error {}
 
 // Avoid crash
-process.on("uncaughtException", (err) => {
-    if(process.env.NODE_ENV=='development'){
-        const error = new TransparentProxyError();
-        error.code = "uncaughtException";
-        error.message = err.message;
-        console.log(error);
-    }
-});
-process.on("unhandledRejection", (err) => {
-    if(process.env.NODE_ENV=='development'){
-        const error = new TransparentProxyError();
-        error.code = "unhandledRejection";
-        error.message = err.message;
-        console.log(error);
-    }
-});
+// process.on("uncaughtException", (err) => {
+//     if(process.env.NODE_ENV=='development'){
+//         const error = new TransparentProxyError();
+//         error.code = "uncaughtException";
+//         error.message = err.message;
+//         console.log(error);
+//     }
+// });
+// process.on("unhandledRejection", (err) => {
+//     if(process.env.NODE_ENV=='development'){
+//         const error = new TransparentProxyError();
+//         error.code = "unhandledRejection";
+//         error.message = err.message;
+//         console.log(error);
+//     }
+// });
 
 /**
  * Extended `EventEmitter` in flavor `RegExp`
@@ -253,6 +253,9 @@ class TransparentProxy {
     log = new Logger();
     rules = [];
 
+    /**
+     *
+     */
     constructor() {
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
@@ -260,8 +263,6 @@ class TransparentProxy {
         this.handleUpgrade = this.handleUpgrade.bind(this);
         this.handleRequest = this.handleRequest.bind(this);
         this.handleError = this.handleError.bind(this);
-        this.handleSocketError = this.handleSocketError.bind(this);
-        this.handleServerError = this.handleServerError.bind(this);
     }
 
     /**
@@ -335,44 +336,36 @@ class TransparentProxy {
     }
 
     handleConnection(socket) {
-        // monitor CONNECT
-        // socket.on("data", (chunk) => {
-        //     const message = "" + chunk;
-        //     if (message.indexOf("CONNECT") !== -1) {
-        //         console.log(message);
-        //     }
-        // });
+        // @todo store CONNECT info
     }
 
     handleConnect(req, socket, head) {
+        // Tunnel server
         const { port, address } = this.httpsServer.address();
         const serverSocket = net.connect(port, address, () => {
-            socket.write(
-                "HTTP/1.1 200 OK\r\n" +
-                    //   'Proxy-agent: Node.js-Proxy\r\n' +
-                    "\r\n"
-            );
+            let message = "";
+            message += "HTTP/1.1 200 OK\r\n";
+            message += "\r\n";
+            socket.write(message);
             serverSocket.write(head);
-
             serverSocket.pipe(socket);
             socket.pipe(serverSocket);
         });
-
-        serverSocket.on("error", this.handleSocketError);
-        socket.on("error", this.handleSocketError);
+        serverSocket.on("error", this.handleError);
+        socket.on("error", this.handleError);
     }
 
     async createCertificateAuthority() {
+        // Create ROOT CA if not exists
         let ca = {};
         try {
             ca.key = fs.readFileSync("./ca.key");
             ca.cert = fs.readFileSync("./ca.crt");
         } catch (error) {
             ca = Cert.createCertificateAuthority();
-
             fs.writeFileSync("./ca.key", ca.key);
             fs.writeFileSync("./ca.crt", ca.cert);
-
+            // Import to windows trusted ROOT CA
             await execAsync(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
         }
         return ca;
@@ -385,72 +378,65 @@ class TransparentProxy {
         if (this.ctx[servername]) {
             ctx = this.ctx[servername];
         } else {
-            // Generate ROOT CA
             const ca = await this.createCertificateAuthority();
-            // Dynamic Issuer Certificate / Self-signed certiface
-            // do not store, storing certificate make slower request
             const cert = Cert.createSelfSignedCertificate(servername, ca);
+            // Create secure context base on ROOT CA and
+            // self-signed certificate/knows as issuer certificate
             ctx = tls.createSecureContext(cert);
             this.ctx[servername] = ctx;
         }
         cb(err, ctx);
     }
 
-    handleUpgrade(req, socket, head) {}
-
     async handleRequest(req, res, head) {
-        // do not clean code at the moment
-        // it make me easier to iterate logic in research level
-
-        // client<>server communication
+        // Get origin from incoming request
         const base = (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host;
 
-        // Request Object
+        // Create request object
+        // with request options spec `node:http`
+        // but in flavor window.fetch/self.fetch `Request` object
         let options = new URL2(req.url, base);
         options.method = req.method;
         options.url = options.path;
         options.headers = req.headers;
         options.body = req;
 
-        // request.read change to request.buffer
-        // response.read change to response.buffer
-        // accidentally conflict naming with native socket
-
-        // intercept handler
+        // Init log data
         let doc = this.log.create();
-        let callback;
 
+        // Check for intercepting
+        let callback;
         for (let i = 0; i < this.rules.length; i++) {
             const rule = this.rules[i];
-            const passed =
-                (rule.method == ".*" || //
-                    rule.method == options.method) &&
-                rule.regexp.test(options.href);
-
+            const passed = (rule.method == ".*" || rule.method == options.method) && rule.regexp.test(options.href);
             if (passed) {
                 callback = rule.callback;
                 break;
             }
         }
 
-        // read request body
-        // request body sould be uncompressed buffer data
+        // Read incoming request body
         const buffer = [];
+        options.body.on("error", this.handleError);
         options.body.on("data", (chunk) => {
             buffer.push(chunk);
         });
         options.body.on("end", () => {
             const object = options;
             object.body = Buffer.concat(buffer);
+            // Update log request data
             this.log.update(doc._id, { request: object });
         });
 
         if (callback) {
+            // Intercept request sent
             options = await new Promise((resolve) => {
                 callback(options, null, () => {
                     resolve(options);
                 });
             });
+            // in order to continue pipe request
+            // convert string/buffer to readable stream
             let readable = options.body;
             if (!(options.body instanceof Readable)) {
                 readable = new Readable();
@@ -460,19 +446,48 @@ class TransparentProxy {
             options.body = readable;
         }
 
-        // Send to intercept handler
-        // console.log({ request: options });
-
+        // Get request protocol
         const protocol = req.socket.encrypted ? https : http;
 
+        // Make request
         const request = protocol.request(options);
 
-        // response
-        request.on("response", async (response) => {
-            // Response Object
+        // Handler request events
+
+        request.on("error", this.handleError);
+        request.on("response", this.handleResponse(doc, res, callback));
+        request.on("upgrade", this.handleUpgrade(res, head));
+
+        options.body.pipe(request);
+    }
+
+    handleUpgrade(sock, head) {
+        return (response, socket, headers) => {
+            // Switch protocol to ws/wss
+            let message = "HTTP/1.1 101 Switching Protocols\r\n";
+            for (const name in response.headers) {
+                message += name + ": " + response.headers[name] + "\r\n";
+            }
+            message += "\r\n";
+
+            sock.write(message);
+            socket.write(head);
+            socket.pipe(sock);
+            sock.pipe(socket);
+
+            socket.on("error", this.handleError);
+            sock.on("error", this.handleError);
+        };
+    }
+
+    handleResponse(doc, res, callback) {
+        return async (response) => {
+            // Create response object in flavor window.fetch/self.fetch `Response` object
             response.status = response.statusCode;
             response.body = response;
 
+            // Uncompress response body
+            // for log data or intercept response
             let readable = response.body;
             const encoding = response.headers["content-encoding"];
             if (encoding == "gzip") {
@@ -483,7 +498,9 @@ class TransparentProxy {
                 readable = readable.pipe(zlib.createBrotliDecompress());
             }
 
+            // Read response body
             const buffer = [];
+            readable.on("error", this.handleError);
             readable.on("data", (chunk) => {
                 buffer.push(chunk);
             });
@@ -493,12 +510,15 @@ class TransparentProxy {
                 this.log.update(doc._id, { response: object });
             });
 
+            // Intercept response
             if (callback) {
                 response = await new Promise((resolve) => {
                     callback(null, response, () => {
                         resolve(response);
                     });
                 });
+
+                // Compress back `response.body`
                 let readable = response.body;
                 if (!(response.body instanceof Readable)) {
                     readable = new Readable();
@@ -516,46 +536,14 @@ class TransparentProxy {
                 response.body = readable;
             }
 
-            // Send to intercept handler
-            // console.log({ response });
-
+            // finishing response
             res.writeHead(response.status, response.headers);
             response.body.pipe(res);
-        });
-
-        // upgrade
-        // prettier-ignore
-        request.on("upgrade", ((sock) => {
-            return (response, socket, headers) => {
-                // Just by pass
-                // and ignore this part
-                // at the moment
-                let message = "HTTP/1.1 101 Switching Protocols\r\n";
-                // message += "Upgrade: websocket\r\n";
-                // message += "Connection: Upgrade\r\n";
-                for (const name in response.headers) {
-                    message += name + ": " + response.headers[name] + "\r\n";
-                }
-                message += "\r\n";
-
-                sock.write(message);
-                socket.write(head);
-                socket.pipe(sock);
-                sock.pipe(socket);
-
-                socket.on("error", this.handleSocketError);
-                sock.on("error", this.handleSocketError);
-            }
-        })(res));
-
-        // error
-        request.on("error", this.handleServerError);
-
-        options.body.pipe(request);
+        };
     }
 
     handleError(err) {
-        if(process.env.NODE_ENV=='development'){
+        if (process.env.NODE_ENV == "development") {
             const error = new TransparentProxyError();
             error.code = "handleError";
             error.message = err.message;
@@ -563,29 +551,11 @@ class TransparentProxy {
         }
     }
 
-    handleSocketError(err) {
-        if(process.env.NODE_ENV=='development'){
-            const error = new TransparentProxyError();
-            error.code = "handleSocketError";
-            error.message = err.message;
-            console.log(error);
-        }
-    }
-
-    handleServerError(err) {
-        if(process.env.NODE_ENV=='development'){
-            const error = new TransparentProxyError();
-            error.code = "handleServerError";
-            error.message = err.message;
-            console.log(error);
-        }
-    }
-
     /**
-     * 
+     *
      * @param {Number} port -
      * @param {String} hostname -
-     * @param {Function} backlog 
+     * @param {Function} backlog
      * @returns {Object}
      */
     listen(port, hostname, backlog) {
@@ -595,14 +565,17 @@ class TransparentProxy {
         }
 
         port = port || 8888;
+        // This hostname set for windows
+        // by default proxy server using global host
         hostname = hostname || "127.0.0.1";
 
+        // Enabling window proxy internet settings
         Regedit.enableProxy({ hostname, port });
 
-        // hostname
-        const SNICallback = this.SNICallback;
+        // Create proxy server
         this.httpServer = http.createServer().listen(port, "0.0.0.0", backlog);
-        this.httpsServer = https.createServer({ SNICallback }).listen(0, "0.0.0.0");
+        // Create proxy tunnel server
+        this.httpsServer = https.createServer({ SNICallback: this.SNICallback }).listen(0, "0.0.0.0");
 
         this.httpServer.on("connection", this.handleConnection);
         this.httpServer.on("connect", this.handleConnect);
@@ -620,7 +593,7 @@ class TransparentProxy {
     }
 
     /**
-     * 
+     *
      */
     close() {
         this.httpServer.close();
@@ -634,3 +607,18 @@ class TransparentProxy {
 }
 
 module.exports = TransparentProxy;
+
+// const proxy = new TransparentProxy();
+
+// proxy.log.on("update.*", (e, doc) => {
+//     console.log(doc?.request?.method, doc?.request?.url, doc?.response?.status);
+// });
+
+// proxy.listen(8888, () => {
+//     console.log("proxy.listen");
+// });
+
+// setTimeout(() => {
+//     proxy.close()
+//     console.log('proxy.close')
+// }, 1000)
