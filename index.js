@@ -20,16 +20,20 @@ class TransparentProxyError extends Error {}
 
 // Avoid crash
 process.on("uncaughtException", (err) => {
-    const error = new TransparentProxyError();
-    error.code = "uncaughtException";
-    error.message = err.message;
-    console.log(error);
+    if(process.env.NODE_ENV=='development'){
+        const error = new TransparentProxyError();
+        error.code = "uncaughtException";
+        error.message = err.message;
+        console.log(error);
+    }
 });
 process.on("unhandledRejection", (err) => {
-    const error = new TransparentProxyError();
-    error.code = "unhandledRejection";
-    error.message = err.message;
-    console.log(error);
+    if(process.env.NODE_ENV=='development'){
+        const error = new TransparentProxyError();
+        error.code = "unhandledRejection";
+        error.message = err.message;
+        console.log(error);
+    }
 });
 
 /**
@@ -551,24 +555,30 @@ class TransparentProxy {
     }
 
     handleError(err) {
-        const error = new TransparentProxyError();
-        error.code = "handleError";
-        error.message = err.message;
-        console.log(error);
+        if(process.env.NODE_ENV=='development'){
+            const error = new TransparentProxyError();
+            error.code = "handleError";
+            error.message = err.message;
+            console.log(error);
+        }
     }
 
     handleSocketError(err) {
-        const error = new TransparentProxyError();
-        error.code = "handleSocketError";
-        error.message = err.message;
-        console.log(error);
+        if(process.env.NODE_ENV=='development'){
+            const error = new TransparentProxyError();
+            error.code = "handleSocketError";
+            error.message = err.message;
+            console.log(error);
+        }
     }
 
     handleServerError(err) {
-        const error = new TransparentProxyError();
-        error.code = "handleServerError";
-        error.message = err.message;
-        console.log(error);
+        if(process.env.NODE_ENV=='development'){
+            const error = new TransparentProxyError();
+            error.code = "handleServerError";
+            error.message = err.message;
+            console.log(error);
+        }
     }
 
     /**
