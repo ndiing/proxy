@@ -1,8 +1,8 @@
-## ProxyServer.use()
+## ProxyServer#use()
 
 ### Syntax
 ```
-use()
+use(args)
 ```
 
 ### Parameters

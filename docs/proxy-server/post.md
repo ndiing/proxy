@@ -1,8 +1,8 @@
-## ProxyServer.post()
+## ProxyServer#post()
 
 ### Syntax
 ```
-post()
+post(args)
 ```
 
 ### Parameters

@@ -414,72 +414,49 @@ class ProxyServer {
         this.uuid = crypto.randomUUID();
         pools[this.uuid] = this;
         // console.log("proxy subscribe");
-        const methods = ["POST", "GET", "SET", "PATCH", "DELETE", "USE"];
-        for (let i = 0; i < methods.length; i++) {
-            const method = methods[i];
-            this[method.toLowerCase()] = (...args) => {
-                let methodName = method;
-                if (methodName == "USE") {
-                    methodName = ".*";
-                }
-                this.add(methodName, ...args);
-            };
-        }
     }
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name post
      */
+    post(...args){this.add('POST',...args)}
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name get
      */
+    get(...args){this.add('GET',...args)}
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name set
      */
+    set(...args){this.add('SET',...args)}
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name patch
      */
+    patch(...args){this.add('PATCH',...args)}
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name delete
      */
+    delete(...args){this.add('DELETE',...args)}
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @memberof ProxyServer
-     * @function
-     * @name use
      */
+    use(...args){this.add('.*',...args)}
 
     add(method, path, callback) {
         let regexp = path.source || path;

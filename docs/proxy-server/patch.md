@@ -1,8 +1,8 @@
-## ProxyServer.patch()
+## ProxyServer#patch()
 
 ### Syntax
 ```
-patch()
+patch(args)
 ```
 
 ### Parameters

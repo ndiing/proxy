@@ -1,8 +1,8 @@
-## ProxyServer.delete()
+## ProxyServer#delete()
 
 ### Syntax
 ```
-delete()
+delete(args)
 ```
 
 ### Parameters

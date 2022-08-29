@@ -23,6 +23,18 @@ npm install @ndiinginc/proxy
 <!-- methods -->
 ### Methods
 <dl>
+    <dt><code><a href="./docs/proxy-server/post.md">ProxyServer#post()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/get.md">ProxyServer#get()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/set.md">ProxyServer#set()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/patch.md">ProxyServer#patch()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/delete.md">ProxyServer#delete()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/use.md">ProxyServer#use()</a></code></dt>
+    <dd></dd>
     <dt><code><a href="./docs/proxy-server/listen.md">ProxyServer#listen()</a></code></dt>
     <dd></dd>
     <dt><code><a href="./docs/proxy-server/close.md">ProxyServer#close()</a></code></dt>
@@ -31,21 +43,6 @@ npm install @ndiinginc/proxy
 <!-- methods -->
 
 <!-- staticmethods -->
-### Static Methods
-<dl>
-    <dt><code><a href="./docs/proxy-server/post.md">ProxyServer.post()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/proxy-server/get.md">ProxyServer.get()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/proxy-server/set.md">ProxyServer.set()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/proxy-server/patch.md">ProxyServer.patch()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/proxy-server/delete.md">ProxyServer.delete()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/proxy-server/use.md">ProxyServer.use()</a></code></dt>
-    <dd></dd>
-</dl>
 <!-- staticmethods -->
 
 <!-- examples -->

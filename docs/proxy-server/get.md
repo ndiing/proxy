@@ -1,8 +1,8 @@
-## ProxyServer.get()
+## ProxyServer#get()
 
 ### Syntax
 ```
-get()
+get(args)
 ```
 
 ### Parameters

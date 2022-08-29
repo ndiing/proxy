@@ -1,8 +1,8 @@
-## ProxyServer.set()
+## ProxyServer#set()
 
 ### Syntax
 ```
-set()
+set(args)
 ```
 
 ### Parameters
