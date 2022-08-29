@@ -1,13 +1,12 @@
-## EventEmitter()
+## Server.close()
 
 ### Syntax
 ```
-EventEmitter(args)
+close()
 ```
 
 ### Parameters
 <dl>
-    <dt><code>args</code></dt>
 </dl>
 
 ### Return value

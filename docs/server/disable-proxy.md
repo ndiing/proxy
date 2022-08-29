@@ -1,13 +1,13 @@
-## EventEmitter()
+## Server.disableProxy()
+_Disable windows proxy settings &#x60;Check proxy&#x60;_
 
 ### Syntax
 ```
-EventEmitter(args)
+disableProxy()
 ```
 
 ### Parameters
 <dl>
-    <dt><code>args</code></dt>
 </dl>
 
 ### Return value

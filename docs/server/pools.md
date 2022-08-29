@@ -1,13 +1,12 @@
-## EventEmitter()
+## Server#pools()
 
 ### Syntax
 ```
-EventEmitter(args)
+pools()
 ```
 
 ### Parameters
 <dl>
-    <dt><code>args</code></dt>
 </dl>
 
 ### Return value

@@ -1,13 +1,12 @@
-## EventEmitter()
+## Logger#logs()
 
 ### Syntax
 ```
-EventEmitter(args)
+logs()
 ```
 
 ### Parameters
 <dl>
-    <dt><code>args</code></dt>
 </dl>
 
 ### Return value

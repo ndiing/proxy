@@ -1,13 +1,12 @@
-## EventEmitter()
+## Server()
 
 ### Syntax
 ```
-EventEmitter(args)
+Server()
 ```
 
 ### Parameters
 <dl>
-    <dt><code>args</code></dt>
 </dl>
 
 ### Return value

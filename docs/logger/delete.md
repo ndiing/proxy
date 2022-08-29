@@ -2,13 +2,13 @@
 
 ### Syntax
 ```
-delete(_id)
+delete(id)
 ```
 
 ### Parameters
 <dl>
-    <dt><code>_id</code></dt>
-    <dd>A <code>Number</code> -</dd>
+    <dt><code>id</code></dt>
+    <dd>A <code>Number</code> </dd>
 </dl>
 
 ### Return value

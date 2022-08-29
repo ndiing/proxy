@@ -2,15 +2,15 @@
 
 ### Syntax
 ```
-update(_id,doc)
+update(id,log)
 ```
 
 ### Parameters
 <dl>
-    <dt><code>_id</code></dt>
-    <dd>A <code>Number</code> -</dd>
-    <dt><code>doc</code></dt>
-    <dd>A <code>Object</code> -</dd>
+    <dt><code>id</code></dt>
+    <dd>A <code>Number</code> </dd>
+    <dt><code>log</code></dt>
+    <dd>A <code>Object</code> </dd>
 </dl>
 
 ### Return value

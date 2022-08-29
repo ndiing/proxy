@@ -2,13 +2,13 @@
 
 ### Syntax
 ```
-create(doc)
+create(log)
 ```
 
 ### Parameters
 <dl>
-    <dt><code>doc</code></dt>
-    <dd>A <code>Object</code> -</dd>
+    <dt><code>log</code></dt>
+    <dd>A <code>Object</code> </dd>
 </dl>
 
 ### Return value
