@@ -1,49 +1,36 @@
 const http = require("http");
 const https = require("https");
+const url2 = require("@ndiinginc/url");
 const net = require("net");
 const tls = require("tls");
-const zlib = require("zlib");
-const { Readable } = require("stream");
+const certmaker = require("@ndiinginc/cert");
+const regedit = require("regedit").promisified;
 const fs = require("fs");
-const crypto = require("crypto");
-const events = require("events");
+const path = require("path");
 const { exec } = require("child_process");
 const { promisify } = require("util");
-const URL2 = require("@ndiinginc/url");
-const Cert = require("@ndiinginc/cert");
-const regedit = require("regedit").promisified;
-const execAsync = promisify(exec);
+const { Readable } = require("stream");
+const zlib = require("zlib");
+const events = require("events");
+const crypto = require("crypto");
 
-// Avoid crash
-// process.on("uncaughtException", (err) => {
-//     if(process.env.NODE_ENV=='development'){
-//         console.log(err);
-//     }
-// });
-// process.on("unhandledRejection", (err) => {
-//     if(process.env.NODE_ENV=='development'){
-//         console.log(err);
-//     }
-// });
+class Logger extends events {
+    id_ = -1;
+    get _id() {
+        return ++this.id_;
+    }
 
-/**
- * Extended `EventEmitter` in flavor `RegExp`
- */
-class EventEmitter extends events {
-    /**
-     *
-     * @param {String/RegExp} eventName -
-     * @param {Function} listener
-     */
+    docs = [];
+
+    constructor(...args) {
+        super(...args);
+        this.setMaxListeners(0);
+    }
+
     on(eventName, listener) {
         super.on(eventName.source || eventName, listener);
     }
 
-    /**
-     *
-     * @param {String/RegExp} eventName -
-     * @param  {any} args
-     */
     emit(eventName, ...args) {
         super.emit(eventName, ...args);
 
@@ -53,110 +40,17 @@ class EventEmitter extends events {
             }
         }
     }
-}
 
-/**
- *
- */
-class Regedit {
-    /**
-     *
-     */
-    static enableProxy(options = {}) {
-        return regedit
-            .putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: { value: 1, type: "REG_DWORD" },
-                    ProxyOverride: { value: "<-loopback>", type: "REG_SZ" },
-                    ProxyServer: { value: `http=${options.hostname}:${options.port};https=${options.hostname}:${options.port};ftp=${options.hostname}:${options.port}`, type: "REG_SZ" },
-                },
-            })
-            .catch(() => {});
-    }
-
-    /**
-     *
-     */
-    static disableProxy() {
-        return regedit
-            .putValue({
-                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
-                    ProxyEnable: { value: 0, type: "REG_DWORD" },
-                    ProxyOverride: { value: "", type: "REG_SZ" },
-                    ProxyServer: { value: "", type: "REG_SZ" },
-                },
-            })
-            .catch(() => {});
-    }
-}
-
-/**
- * Used in transparent proxy, for record request&response while monitoring
- * @example
- * // Usage
- *
- * const log = new Logger()
- *
- * // Create initial `_id`
- * var doc = log.create()
- * console.log(doc)
- *
- * // Update when request
- * var doc = log.update(doc._id,{request:{}})
- * console.log(doc)
- *
- * // Update when response
- * var doc = log.update(doc._id,{response:{}})
- * console.log(doc)
- *
- * // Read request&respoonse doc
- * console.log(log.read(doc._id))
- */
-class Logger extends EventEmitter {
-    id_ = -1;
-    /**
-     * Auto Increment ID
-     */
-    get _id() {
-        return ++this.id_;
-    }
-    /**
-     * Document collection
-     */
-    docs = [];
-
-    constructor() {
-        super();
-        // Infinity
-        this.setMaxListeners(0);
-    }
-
-    /**
-     *
-     * @param {Object} doc -
-     * @returns {Object}
-     */
     create(doc = {}) {
         doc._id = this._id;
         this.docs[doc._id] = doc;
         return { _id: doc._id, status: true };
     }
 
-    /**
-     *
-     * @param {Number} _id -
-     * @returns {Object}
-     */
     read(_id) {
         return this.docs[_id];
     }
 
-    /**
-     *
-     * @param {Number} _id -
-     * @param {Object} doc -
-     * @returns {Object}
-     */
     update(_id, doc = {}) {
         const oldDoc = this.read(_id);
         if (oldDoc) {
@@ -173,11 +67,6 @@ class Logger extends EventEmitter {
         return { _id, status: false };
     }
 
-    /**
-     *
-     * @param {Number} _id -
-     * @returns {Object}
-     */
     delete(_id) {
         const oldDoc = this.read(_id);
         this.docs[_id] = undefined;
@@ -185,415 +74,432 @@ class Logger extends EventEmitter {
     }
 }
 
+let httpServer = null;
+let httpsServer = null;
+const secureContext = new Map();
+const logging = new Logger();
+const pools = {};
+
+// regedit
+function enableProxy(options = {}) {
+    const { hostname, port } = options;
+    regedit
+        .putValue({
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                ProxyEnable: { value: 1, type: "REG_DWORD" },
+                ProxyOverride: { value: "<-loopback>", type: "REG_SZ" },
+                ProxyServer: { value: `http=${hostname}:${port};https=${hostname}:${port};ftp=${hostname}:${port}`, type: "REG_SZ" },
+            },
+        })
+        .catch(() => {});
+}
+function disableProxy() {
+    regedit
+        .putValue({
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings": {
+                ProxyEnable: { value: 0, type: "REG_DWORD" },
+                ProxyOverride: { value: "", type: "REG_SZ" },
+                ProxyServer: { value: "", type: "REG_SZ" },
+            },
+        })
+        .catch(() => {});
+}
+
+// cert
+async function createCertificateAuthority() {
+    let ca = {};
+
+    try {
+        ca.key = fs.readFileSync("./ca.key");
+        ca.cert = fs.readFileSync("./ca.crt");
+    } catch (error) {
+        ca = Cert.createCertificateAuthority();
+
+        fs.writeFileSync("./ca.key", ca.key);
+        fs.writeFileSync("./ca.crt", ca.cert);
+
+        await promisify(exec)(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
+    }
+
+    return ca;
+}
+
+// handler
+function handleClose() {}
+function handleConnect(req, socket, head) {
+    const { port, address: hostname } = httpsServer.address();
+
+    const socketServer = net.connect(port, hostname, () => {
+        let message = "";
+        message += `HTTP/1.1 200 OK\r\n`;
+        message += `\r\n`;
+
+        socket.write(message);
+        socketServer.write(head);
+
+        socketServer.pipe(socket);
+        socket.pipe(socketServer);
+    });
+
+    socketServer.on("error", handleError);
+    socket.on("error", handleError);
+}
+function handleConnection(socket) {}
+function handleError(err) {}
+async function handleRequest(req, res, head) {
+    const protocol = [http, https][~~req.socket.encrypted];
+    const base = ["http:", "https:"][~~req.socket.encrypted] + "//" + req.headers.host;
+
+    let request = new url2(req.url, base);
+    request.method = req.method;
+    request.url = request.href;
+    request.headers = req.headers;
+    request.body = req;
+
+    let doc = logging.create();
+    let callback; // = (req, res, next) => next();
+
+    const rules = Object.values(pools)
+        .map((pool) => pool.rules)
+        .flat();
+
+    for (let i = 0; i < rules.length; i++) {
+        const rule = rules[i];
+        const passed =
+            (rule.method == ".*" || //
+                rule.method == request.method) &&
+            rule.regexp.test(request.url);
+        if (passed) {
+            callback = rule.callback;
+            break;
+        }
+    }
+
+    let readable = request.body;
+
+    let buffer = [];
+    readable.on("error", handleError);
+    readable.on("data", (chunk) => {
+        buffer.push(chunk);
+    });
+    readable.on("end", () => {
+        const obj = request;
+        obj.body = Buffer.concat(buffer);
+        logging.update(doc._id, { request: obj });
+    });
+
+    if (callback) {
+        request = await new Promise((resolve) => {
+            logging.once(`request,${doc._id}`, (obj) => {
+                callback(obj, null, () => {
+                    resolve(obj);
+                });
+            });
+        });
+
+        let readable = request.body;
+        if (!(request.body instanceof Readable)) {
+            readable = new Readable();
+            readable.push(request.body);
+            readable.push(null);
+        }
+        request.body = readable;
+    }
+
+    const reqServer = protocol.request(request);
+
+    reqServer.on("close", handleClose);
+    reqServer.on("error", handleError);
+    reqServer.on("response", handleResponse(doc, callback, res));
+    reqServer.on("timeout", handleTimeout);
+    reqServer.on("upgrade", handleUpgrade(res, head));
+
+    request.body.pipe(reqServer);
+}
+//  handleRequest(req,socket,head){}
+function handleResponse(doc, callback, res) {
+    return async function (resServer) {
+        let response = {};
+        response.status = resServer.statusCode;
+        response.headers = resServer.headers;
+        response.body = resServer;
+
+        let readable = response.body;
+        const encoding = resServer.headers["content-encoding"];
+        if (encoding == "gzip") {
+            readable = readable.pipe(zlib.createGunzip());
+        } else if (encoding == "deflate") {
+            readable = readable.pipe(zlib.createInflate());
+        } else if (encoding == "br") {
+            readable = readable.pipe(zlib.createBrotliDecompress());
+        }
+
+        let buffer = [];
+        readable.on("error", handleError);
+        readable.on("data", (chunk) => {
+            buffer.push(chunk);
+        });
+        readable.on("end", () => {
+            const obj = response;
+            obj.body = Buffer.concat(buffer);
+            logging.update(doc._id, { response: obj });
+        });
+
+        if (callback) {
+            response = await new Promise((resolve) => {
+                logging.once(`response,${doc._id}`, (obj) => {
+                    callback(null, obj, () => {
+                        resolve(obj);
+                    });
+                });
+            });
+
+            let readable = response.body;
+            if (!(response.body instanceof Readable)) {
+                readable = new Readable();
+                readable.push(response.body);
+                readable.push(null);
+            }
+            const encoding = resServer.headers["content-encoding"];
+            if (encoding == "gzip") {
+                readable = readable.pipe(zlib.createGzip());
+            } else if (encoding == "deflate") {
+                readable = readable.pipe(zlib.createDeflate());
+            } else if (encoding == "br") {
+                readable = readable.pipe(zlib.createBrotliCompress());
+            }
+            response.body = readable;
+        }
+
+        res.writeHead(response.status, response.headers);
+        response.body.pipe(res);
+    };
+}
+function handleTimeout() {}
+function handleUpgrade(socket, head) {
+    return function (req, socketServer, headServer) {
+        let message = "";
+        message += "HTTP/1.1 101 Switching Protocols\r\n";
+        for (const name in req.headers) {
+            message += name + ": " + req.headers[name] + "\r\n";
+        }
+        message += "\r\n";
+
+        socket.write(message);
+        socketServer.write(head);
+
+        socketServer.pipe(socket);
+        socket.pipe(socketServer);
+
+        socketServer.on("error", handleError);
+        socket.on("error", handleError);
+    };
+}
+async function SNICallback(servername, cb) {
+    let err = null,
+        ctx = null;
+    if (secureContext.has(servername)) {
+        ctx = secureContext.get(servername);
+    } else {
+        const ca = await createCertificateAuthority();
+        const cert = certmaker.createSelfSignedCertificate(servername, ca);
+
+        ctx = tls.createSecureContext(cert);
+
+        secureContext.set(servername, ctx);
+    }
+    cb(err, ctx);
+}
+
+// listen
+function listen(port, hostname, backlog) {
+    if (typeof hostname == "function") {
+        backlog = hostname;
+        hostname = undefined;
+    }
+
+    hostname = hostname || "127.0.0.1";
+    port = port || 8888;
+
+    enableProxy({ hostname, port });
+
+    httpServer = http.createServer().listen(port, "0.0.0.0");
+    httpsServer = https.createServer({ SNICallback }).listen(0, "0.0.0.0");
+
+    httpServer.on("close", handleClose);
+    httpServer.on("connect", handleConnect);
+    httpServer.on("connection", handleConnection);
+    httpServer.on("error", handleError);
+    httpServer.on("request", handleRequest);
+    httpServer.on("upgrade", handleRequest);
+
+    httpsServer.on("close", handleClose);
+    httpsServer.on("connect", handleConnect);
+    httpsServer.on("connection", handleConnection);
+    httpsServer.on("error", handleError);
+    httpsServer.on("request", handleRequest);
+    httpsServer.on("upgrade", handleRequest);
+}
+
+// close
+function close() {
+    httpServer.close();
+    httpsServer.close();
+
+    httpServer = null;
+    httpsServer = null;
+
+    disableProxy();
+}
+
 /**
- * Fast proxy without redundancy, `Transparent proxy`. Also known as an `intercepting proxy`, `inline proxy`, or `forced proxy`, a transparent proxy intercepts normal application layer communication without requiring any special client configuration.
- * @see [Transparent proxy](https://en.wikipedia.org/wiki/Proxy_server#:~:text=in%20web%20proxies.-,Transparent%20proxy,requiring%20any%20special%20client%20configuration.)
  * @example
- * // Usage
- *
- * // Create proxy object
- * const proxy = new TransparentProxy();
- *
- * // Event listener
- *
- * // Listen on request
- * // proxy.log.on(/request,\d+/, console.log);
- *
- * // Listen on response
- * // proxy.log.on(/response,\d+/, console.log);
- *
- * // Listen on request&response
- * // proxy.log.on(/update,\d+/, console.log);
- *
- * // Start transparent proxy server
- * const server = proxy.listen(8888, () => {
- *     console.log("proxy listen", server.address());
+ * // Create proxy
+ * var proxy1 = new ProxyServer();
+ * // Listen on logging
+ * // using request,\d+
+ * // response,\d+
+ * // and update,\d+
+ * // event name
+ * proxy1.logging.on("request.*", (eventName, req) => {
+ *     console.log("from proxy1", req.method, req.pathname);
  * });
+ * proxy1.listen();
+ * setTimeout(() => {
+ *     // close after 3minutes
+ *     proxy1.close();
+ *     // when proxy more than one
+ *     // is not close primary proxy
+ *     // just proxx configuration for this one
+ * }, 1000 * 60 * 3);
  *
- * // // Intercepting request&response
- * // proxy.use("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {
- * //     // callback will call twice on
- * //     // before request
- * //     if (req) console.log(req.method, req.url);
- * //     // and before response
- * //     if (res) console.log(res.status);
- * //     next();
- * // });
- *
- * // also you can use spesific method
- * proxy.get("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {
+ * // like another server proxy
+ * // it always create one proxy per machine
+ * // register more than one proxy, is only subscribe from
+ * // primary proxy
+ * var proxy2 = new ProxyServer();
+ * proxy2.logging.on("request.*", (eventName, req) => {
+ *     console.log("from proxy2", req.method, req.pathname);
+ * });
+ * // adding intercept method like
+ * // use,get,post,patch,set,delete
+ * // it only match one, not like regular router middleware
+ * proxy2.use("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {
  *     if (req) {
  *         delete req.headers["if-none-match"];
  *     }
- *     if (res) {
- *         res.body = JSON.stringify([]);
- *     }
  *     next();
  * });
- *
- * // Stop proxy
- * // setTimeout(() => {
- * //     proxy.close();
- * //     console.log("proxy close");
- * // }, 2000);
- *
+ * // when proxy already listening
+ * // this method never been call
+ * proxy2.listen();
+ * setTimeout(() => {
+ *     // close after 5minutes
+ *     proxy2.close();
+ * }, 1000 * 60 * 5);
  */
-class TransparentProxy {
+class ProxyServer {
     /**
      *
      */
     constructor() {
-        this.ctx = {};
-        this.log = new Logger();
+        /**
+         * will be remove, use `logging`
+         * @deprecated
+         */
+        this.log = logging;
+
+        this.logging = logging;
         this.rules = [];
-        this.handleConnection = this.handleConnection.bind(this);
-        this.handleConnect = this.handleConnect.bind(this);
-        this.SNICallback = this.SNICallback.bind(this);
-        this.handleUpgrade = this.handleUpgrade.bind(this);
-        this.handleRequest = this.handleRequest.bind(this);
-        this.handleError = this.handleError.bind(this);
-        this.handleTimeout = this.handleTimeout.bind(this);
-    }
-
-    /**
-     * @private
-     * @param {*} method
-     * @param {*} path
-     * @param {*} callback
-     */
-    add(method, path, callback) {
-        if (typeof method == "object") {
-            ({ method, path, callback } = method);
-        }
-        let regexp = path.source || path;
-        regexp = new RegExp("^" + regexp, "i");
-        this.rules.push({ method, path, callback, regexp });
-        return this;
-    }
-
-    /**
-     * @param {String/Function} path - path/callback
-     * @param {Function} callback
-     */
-    use(...args) {
-        this.add(".*", ...args);
-        return this;
-    }
-
-    /**
-     * @param {String} path
-     * @param {Function} callback
-     */
-    post(...args) {
-        this.add("POST", ...args);
-        return this;
-    }
-
-    /**
-     * @param {String} path
-     * @param {Function} callback
-     */
-    get(...args) {
-        this.add("GET", ...args);
-        return this;
-    }
-
-    /**
-     * @param {String} path
-     * @param {Function} callback
-     */
-    patch(...args) {
-        this.add("PATCH", ...args);
-        return this;
-    }
-
-    /**
-     * @param {String} path
-     * @param {Function} callback
-     */
-    put(...args) {
-        this.add("PUT", ...args);
-        return this;
-    }
-
-    /**
-     * @param {String} path
-     * @param {Function} callback
-     */
-    delete(...args) {
-        this.add("DELETE", ...args);
-        return this;
-    }
-
-    handleConnection(socket) {
-        // @todo store CONNECT info
-    }
-
-    handleConnect(req, socket, head) {
-        // Tunnel server
-        const { port, address } = this.httpsServer.address();
-        const serverSocket = net.connect(port, address, () => {
-            let message = "";
-            message += "HTTP/1.1 200 OK\r\n";
-            message += "\r\n";
-            socket.write(message);
-            serverSocket.write(head);
-            serverSocket.pipe(socket);
-            socket.pipe(serverSocket);
-        });
-        serverSocket.on("error", this.handleError);
-        socket.on("error", this.handleError);
-    }
-
-    async createCertificateAuthority() {
-        // Create ROOT CA if not exists
-        let ca = {};
-        try {
-            ca.key = fs.readFileSync("./ca.key");
-            ca.cert = fs.readFileSync("./ca.crt");
-        } catch (error) {
-            ca = Cert.createCertificateAuthority();
-            fs.writeFileSync("./ca.key", ca.key);
-            fs.writeFileSync("./ca.crt", ca.cert);
-            // Import to windows trusted ROOT CA
-            await execAsync(`powershell -Command "Start-Process cmd -Verb RunAs -ArgumentList '/c cd ${process.cwd()} && certutil -enterprise -addstore -f root ${process.cwd()}\\ca.crt'"`);
-        }
-        return ca;
-    }
-
-    async SNICallback(servername, cb) {
-        const err = null;
-        let ctx;
-
-        if (this.ctx[servername]) {
-            ctx = this.ctx[servername];
-        } else {
-            const ca = await this.createCertificateAuthority();
-            const cert = Cert.createSelfSignedCertificate(servername, ca);
-            // Create secure context base on ROOT CA and
-            // self-signed certificate/knows as issuer certificate
-            ctx = tls.createSecureContext(cert);
-            this.ctx[servername] = ctx;
-        }
-        cb(err, ctx);
-    }
-
-    async handleRequest(req, res, head) {
-        // Get origin from incoming request
-        const base = (req.socket.encrypted ? "https:" : "http:") + "//" + req.headers.host;
-
-        // Create request object
-        // with request options spec `node:http`
-        // but in flavor window.fetch/self.fetch `Request` object
-        let options = new URL2(req.url, base);
-        options.method = req.method;
-        options.url = options.path;
-        options.headers = req.headers;
-        options.body = req;
-
-        // Init log data
-        let doc = this.log.create();
-
-        // Check for intercepting
-        let callback;
-        for (let i = 0; i < this.rules.length; i++) {
-            const rule = this.rules[i];
-            const passed = (rule.method == ".*" || rule.method == options.method) && rule.regexp.test(options.href);
-            if (passed) {
-                callback = rule.callback;
-                break;
-            }
-        }
-
-        // Read incoming request body
-        const buffer = [];
-        options.body.on("error", this.handleError);
-        options.body.on("data", (chunk) => {
-            buffer.push(chunk);
-        });
-        options.body.on("end", () => {
-            const object = options;
-            object.body = Buffer.concat(buffer);
-            // Update log request data
-            this.log.update(doc._id, { request: object });
-        });
-
-        if (callback) {
-            // Intercept request sent
-            options = await new Promise((resolve) => {
-                callback(options, null, () => {
-                    resolve(options);
-                });
-            });
-            // in order to continue pipe request
-            // convert string/buffer to readable stream
-            let readable = options.body;
-            if (!(options.body instanceof Readable)) {
-                readable = new Readable();
-                readable.push(options.body);
-                readable.push(null); //end
-            }
-            options.body = readable;
-        }
-
-        // Get request protocol
-        const protocol = req.socket.encrypted ? https : http;
-
-        // Make request
-        const request = protocol.request(options);
-
-        // Handler request events
-
-        request.on("error", this.handleError);
-        request.on("timeout", this.handleTimeout);
-        request.on("response", this.handleResponse(doc, res, callback));
-        request.on("upgrade", this.handleUpgrade(res, head));
-
-        options.body.pipe(request);
-    }
-
-    handleUpgrade(sock, head) {
-        return (response, socket, headers) => {
-            // Switch protocol to ws/wss
-            let message = "HTTP/1.1 101 Switching Protocols\r\n";
-            for (const name in response.headers) {
-                message += name + ": " + response.headers[name] + "\r\n";
-            }
-            message += "\r\n";
-
-            sock.write(message);
-            socket.write(head);
-            socket.pipe(sock);
-            sock.pipe(socket);
-
-            socket.on("error", this.handleError);
-            sock.on("error", this.handleError);
-        };
-    }
-
-    handleResponse(doc, res, callback) {
-        return async (response) => {
-            // Create response object in flavor window.fetch/self.fetch `Response` object
-            response.status = response.statusCode;
-            response.body = response;
-
-            // Uncompress response body
-            // for log data or intercept response
-            let readable = response.body;
-            const encoding = response.headers["content-encoding"];
-            if (encoding == "gzip") {
-                readable = readable.pipe(zlib.createGunzip());
-            } else if (encoding == "deflate") {
-                readable = readable.pipe(zlib.createInflate());
-            } else if (encoding == "br") {
-                readable = readable.pipe(zlib.createBrotliDecompress());
-            }
-
-            // Read response body
-            const buffer = [];
-            readable.on("error", this.handleError);
-            readable.on("data", (chunk) => {
-                buffer.push(chunk);
-            });
-            readable.on("end", () => {
-                const object = response;
-                object.body = Buffer.concat(buffer);
-                this.log.update(doc._id, { response: object });
-            });
-
-            // Intercept response
-            if (callback) {
-                response = await new Promise((resolve) => {
-                    callback(null, response, () => {
-                        resolve(response);
-                    });
-                });
-
-                // Compress back `response.body`
-                let readable = response.body;
-                if (!(response.body instanceof Readable)) {
-                    readable = new Readable();
-                    readable.push(response.body);
-                    readable.push(null); //end
+        this.uuid = crypto.randomUUID();
+        pools[this.uuid] = this;
+        // console.log("proxy subscribe");
+        const methods = ["POST", "GET", "SET", "PATCH", "DELETE", "USE"];
+        for (let i = 0; i < methods.length; i++) {
+            const method = methods[i];
+            this[method.toLowerCase()] = (...args) => {
+                let methodName = method;
+                if (methodName == "USE") {
+                    methodName = ".*";
                 }
-                const encoding = response.headers["content-encoding"];
-                if (encoding == "gzip") {
-                    readable = readable.pipe(zlib.createGzip());
-                } else if (encoding == "deflate") {
-                    readable = readable.pipe(zlib.createDeflate());
-                } else if (encoding == "br") {
-                    readable = readable.pipe(zlib.createBrotliCompress());
-                }
-                response.body = readable;
-            }
-
-            // finishing response
-            res.writeHead(response.status, response.headers);
-            response.body.pipe(res);
-        };
-    }
-
-    handleTimeout() {}
-
-    handleError(err) {
-        if (process.env.NODE_ENV == "development") {
-            console.log(err);
+                this.add(methodName, ...args);
+            };
         }
     }
 
     /**
      *
-     * @param {Number} port -
-     * @param {String} hostname -
-     * @param {Function} backlog
-     * @returns {Object}
+     * @param {String} path
+     * @param {Function} callback
+     * @name post
      */
-    listen(port, hostname, backlog) {
-        if (typeof hostname == "function") {
-            backlog = hostname;
-            hostname = undefined;
+
+    /**
+     *
+     * @param {String} path
+     * @param {Function} callback
+     * @name get
+     */
+
+    /**
+     *
+     * @param {String} path
+     * @param {Function} callback
+     * @name set
+     */
+
+    /**
+     *
+     * @param {String} path
+     * @param {Function} callback
+     * @name patch
+     */
+
+    /**
+     *
+     * @param {String} path
+     * @param {Function} callback
+     * @name delete
+     */
+
+    /**
+     *
+     * @param {String} path
+     * @param {Function} callback
+     * @name use
+     */
+
+    add(method, path, callback) {
+        let regexp = path.source || path;
+        regexp = new RegExp("^" + regexp, "i");
+        this.rules.push({ method, path, callback, regexp });
+    }
+
+    /**
+     *
+     * @param {Number} port
+     * @param {String/Function} hostname
+     * @param {Function} backlog
+     */
+    listen(...args) {
+        if (httpServer) {
+            return;
         }
-
-        port = port || 8888;
-        // This hostname set for windows
-        // by default proxy server using global host
-        hostname = hostname || "127.0.0.1";
-
-        // Enabling window proxy internet settings
-        Regedit.enableProxy({ hostname, port });
-
-        // Create proxy server
-        this.httpServer = http.createServer().listen(port, "0.0.0.0", backlog);
-        // Create proxy tunnel server
-        this.httpsServer = https.createServer({ SNICallback: this.SNICallback }).listen(0, "0.0.0.0");
-
-        this.httpServer.on("connection", this.handleConnection);
-        this.httpServer.on("connect", this.handleConnect);
-        this.httpServer.on("upgrade", this.handleRequest);
-        this.httpServer.on("request", this.handleRequest);
-        this.httpServer.on("error", this.handleError);
-
-        this.httpsServer.on("connection", this.handleConnection);
-        this.httpsServer.on("connect", this.handleConnect);
-        this.httpsServer.on("upgrade", this.handleRequest);
-        this.httpsServer.on("request", this.handleRequest);
-        this.httpsServer.on("error", this.handleError);
-
-        return this.httpServer;
+        listen(...args);
+        // console.log("proxy listen");
     }
 
     /**
      *
      */
     close() {
-        this.httpServer.close();
-        this.httpServer = null;
-
-        this.httpsServer.close();
-        this.httpsServer = null;
-
-        Regedit.disableProxy();
+        delete pools[this.uuid];
+        // console.log("proxy unsubscribe");
+        if (Object.keys(pools).length == 0) {
+            close();
+            // console.log("proxy close");
+        }
     }
 }
 
-module.exports = TransparentProxy;
+module.exports = ProxyServer;

@@ -4,13 +4,54 @@
 npm install @ndiinginc/proxy
 ```
 
-## EventEmitter
-_Extended &#x60;EventEmitter&#x60; in flavor &#x60;RegExp&#x60;_
+## Global
 
 <!-- constructor -->
 <!-- constructor -->
 
 <!-- properties -->
+### Properties
+<dl>
+    <dt><code><a href="./docs//post.md">post</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs//get.md">get</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs//set.md">set</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs//patch.md">patch</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs//delete.md">delete</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs//use.md">use</a></code></dt>
+    <dd></dd>
+</dl>
+<!-- properties -->
+
+<!-- staticproperties -->
+<!-- staticproperties -->
+
+<!-- methods -->
+<!-- methods -->
+
+<!-- staticmethods -->
+<!-- staticmethods -->
+
+<!-- examples -->
+<!-- examples -->
+
+<!-- see -->
+<!-- see -->
+## ProxyServer
+
+<!-- constructor -->
+<!-- constructor -->
+
+<!-- properties -->
+### Properties
+<dl>
+    <dt><code><a href="./docs/proxy-server/log.md">ProxyServer#log</a></code></dt>
+    <dd>will be remove, use &#x60;logging&#x60;</dd>
+</dl>
 <!-- properties -->
 
 <!-- staticproperties -->
@@ -19,72 +60,9 @@ _Extended &#x60;EventEmitter&#x60; in flavor &#x60;RegExp&#x60;_
 <!-- methods -->
 ### Methods
 <dl>
-    <dt><code><a href="./docs/event-emitter/on.md">EventEmitter#on()</a></code></dt>
+    <dt><code><a href="./docs/proxy-server/listen.md">ProxyServer#listen()</a></code></dt>
     <dd></dd>
-    <dt><code><a href="./docs/event-emitter/emit.md">EventEmitter#emit()</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-
-<!-- see -->
-<!-- see -->
-## Regedit
-
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-### Static Methods
-<dl>
-    <dt><code><a href="./docs/regedit/enable-proxy.md">Regedit.enableProxy()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/regedit/disable-proxy.md">Regedit.disableProxy()</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-
-<!-- see -->
-<!-- see -->
-## Logger
-_Used in transparent proxy, for record request&amp;response while monitoring_
-
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-### Methods
-<dl>
-    <dt><code><a href="./docs/logger/create.md">Logger#create()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/logger/read.md">Logger#read()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/logger/update.md">Logger#update()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/logger/delete.md">Logger#delete()</a></code></dt>
+    <dt><code><a href="./docs/proxy-server/close.md">ProxyServer#close()</a></code></dt>
     <dd></dd>
 </dl>
 <!-- methods -->
@@ -95,61 +73,10 @@ _Used in transparent proxy, for record request&amp;response while monitoring_
 <!-- examples -->
 ### Examples
 ```js
-// Usageconst log = new Logger()// Create initial `_id`var doc = log.create()console.log(doc)// Update when requestvar doc = log.update(doc._id,{request:{}})console.log(doc)// Update when responsevar doc = log.update(doc._id,{response:{}})console.log(doc)// Read request&respoonse docconsole.log(log.read(doc._id))
+// Create proxyvar proxy1 = new ProxyServer();// Listen on logging// using request,\d+// response,\d+// and update,\d+// event nameproxy1.logging.on("request.*", (eventName, req) => {    console.log("from proxy1", req.method, req.pathname);});proxy1.listen();setTimeout(() => {    // close after 3minutes    proxy1.close();    // when proxy more than one    // is not close primary proxy    // just proxx configuration for this one}, 1000 * 60 * 3);// like another server proxy// it always create one proxy per machine// register more than one proxy, is only subscribe from// primary proxyvar proxy2 = new ProxyServer();proxy2.logging.on("request.*", (eventName, req) => {    console.log("from proxy2", req.method, req.pathname);});// adding intercept method like// use,get,post,patch,set,delete// it only match one, not like regular router middlewareproxy2.use("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {    if (req) {        delete req.headers["if-none-match"];    }    next();});// when proxy already listening// this method never been callproxy2.listen();setTimeout(() => {    // close after 5minutes    proxy2.close();}, 1000 * 60 * 5);
 ```
 
 <!-- examples -->
 
 <!-- see -->
-<!-- see -->
-## TransparentProxy
-_Fast proxy without redundancy, &#x60;Transparent proxy&#x60;. Also known as an &#x60;intercepting proxy&#x60;, &#x60;inline proxy&#x60;, or &#x60;forced proxy&#x60;, a transparent proxy intercepts normal application layer communication without requiring any special client configuration._
-
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-### Methods
-<dl>
-    <dt><code><a href="./docs/transparent-proxy/add.md">TransparentProxy#add()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/use.md">TransparentProxy#use()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/post.md">TransparentProxy#post()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/get.md">TransparentProxy#get()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/patch.md">TransparentProxy#patch()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/put.md">TransparentProxy#put()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/delete.md">TransparentProxy#delete()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/listen.md">TransparentProxy#listen()</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs/transparent-proxy/close.md">TransparentProxy#close()</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-### Examples
-```js
-// Usage// Create proxy objectconst proxy = new TransparentProxy();// Event listener// Listen on request// proxy.log.on(/request,\d+/, console.log);// Listen on response// proxy.log.on(/response,\d+/, console.log);// Listen on request&response// proxy.log.on(/update,\d+/, console.log);// Start transparent proxy serverconst server = proxy.listen(8888, () => {    console.log("proxy listen", server.address());});// // Intercepting request&response// proxy.use("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {//     // callback will call twice on//     // before request//     if (req) console.log(req.method, req.url);//     // and before response//     if (res) console.log(res.status);//     next();// });// also you can use spesific methodproxy.get("https://jsonplaceholder.typicode.com/posts", (req, res, next) => {    if (req) {        delete req.headers["if-none-match"];    }    if (res) {        res.body = JSON.stringify([]);    }    next();});// Stop proxy// setTimeout(() => {//     proxy.close();//     console.log("proxy close");// }, 2000);
-```
-
-<!-- examples -->
-
-<!-- see -->
-### See also
-- [Transparent proxy](https://en.wikipedia.org/wiki/Proxy_server#:~:text&#x3D;in%20web%20proxies.-,Transparent%20proxy,requiring%20any%20special%20client%20configuration.)
 <!-- see -->
