@@ -431,42 +431,48 @@ class ProxyServer {
      *
      * @param {String} path
      * @param {Function} callback
-     * @name post
+     * @memberof ProxyServer
+     * @method post
      */
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @name get
+     * @memberof ProxyServer
+     * @method get
      */
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @name set
+     * @memberof ProxyServer
+     * @method set
      */
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @name patch
+     * @memberof ProxyServer
+     * @method patch
      */
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @name delete
+     * @memberof ProxyServer
+     * @method delete
      */
 
     /**
      *
      * @param {String} path
      * @param {Function} callback
-     * @name use
+     * @memberof ProxyServer
+     * @method use
      */
 
     add(method, path, callback) {

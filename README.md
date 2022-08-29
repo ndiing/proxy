@@ -4,43 +4,6 @@
 npm install @ndiinginc/proxy
 ```
 
-## Global
-
-<!-- constructor -->
-<!-- constructor -->
-
-<!-- properties -->
-### Properties
-<dl>
-    <dt><code><a href="./docs//post.md">post</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs//get.md">get</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs//set.md">set</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs//patch.md">patch</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs//delete.md">delete</a></code></dt>
-    <dd></dd>
-    <dt><code><a href="./docs//use.md">use</a></code></dt>
-    <dd></dd>
-</dl>
-<!-- properties -->
-
-<!-- staticproperties -->
-<!-- staticproperties -->
-
-<!-- methods -->
-<!-- methods -->
-
-<!-- staticmethods -->
-<!-- staticmethods -->
-
-<!-- examples -->
-<!-- examples -->
-
-<!-- see -->
-<!-- see -->
 ## ProxyServer
 
 <!-- constructor -->
@@ -68,6 +31,21 @@ npm install @ndiinginc/proxy
 <!-- methods -->
 
 <!-- staticmethods -->
+### Static Methods
+<dl>
+    <dt><code><a href="./docs/proxy-server/post.md">ProxyServer.post()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/get.md">ProxyServer.get()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/set.md">ProxyServer.set()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/patch.md">ProxyServer.patch()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/delete.md">ProxyServer.delete()</a></code></dt>
+    <dd></dd>
+    <dt><code><a href="./docs/proxy-server/use.md">ProxyServer.use()</a></code></dt>
+    <dd></dd>
+</dl>
 <!-- staticmethods -->
 
 <!-- examples -->
