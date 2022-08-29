@@ -5,6 +5,7 @@ const tls = require("tls");
 const zlib = require("zlib");
 const { Readable } = require("stream");
 const fs = require("fs");
+const crypto = require("crypto");
 const events = require("events");
 const { exec } = require("child_process");
 const { promisify } = require("util");
@@ -13,26 +14,15 @@ const Cert = require("@ndiinginc/cert");
 const regedit = require("regedit").promisified;
 const execAsync = promisify(exec);
 
-/**
- * Error Object
- */
-class TransparentProxyError extends Error {}
-
 // Avoid crash
 // process.on("uncaughtException", (err) => {
 //     if(process.env.NODE_ENV=='development'){
-//         const error = new TransparentProxyError();
-//         error.code = "uncaughtException";
-//         error.message = err.message;
-//         console.log(error);
+//         console.log(err);
 //     }
 // });
 // process.on("unhandledRejection", (err) => {
 //     if(process.env.NODE_ENV=='development'){
-//         const error = new TransparentProxyError();
-//         error.code = "unhandledRejection";
-//         error.message = err.message;
-//         console.log(error);
+//         console.log(err);
 //     }
 // });
 
@@ -249,20 +239,20 @@ class Logger extends EventEmitter {
  *
  */
 class TransparentProxy {
-    ctx = {};
-    log = new Logger();
-    rules = [];
-
     /**
      *
      */
     constructor() {
+        this.ctx = {};
+        this.log = new Logger();
+        this.rules = [];
         this.handleConnection = this.handleConnection.bind(this);
         this.handleConnect = this.handleConnect.bind(this);
         this.SNICallback = this.SNICallback.bind(this);
         this.handleUpgrade = this.handleUpgrade.bind(this);
         this.handleRequest = this.handleRequest.bind(this);
         this.handleError = this.handleError.bind(this);
+        this.handleTimeout = this.handleTimeout.bind(this);
     }
 
     /**
@@ -455,6 +445,7 @@ class TransparentProxy {
         // Handler request events
 
         request.on("error", this.handleError);
+        request.on("timeout", this.handleTimeout);
         request.on("response", this.handleResponse(doc, res, callback));
         request.on("upgrade", this.handleUpgrade(res, head));
 
@@ -542,12 +533,11 @@ class TransparentProxy {
         };
     }
 
+    handleTimeout() {}
+
     handleError(err) {
         if (process.env.NODE_ENV == "development") {
-            const error = new TransparentProxyError();
-            error.code = "handleError";
-            error.message = err.message;
-            console.log(error);
+            console.log(err);
         }
     }
 
@@ -607,18 +597,3 @@ class TransparentProxy {
 }
 
 module.exports = TransparentProxy;
-
-// const proxy = new TransparentProxy();
-
-// proxy.log.on("update.*", (e, doc) => {
-//     console.log(doc?.request?.method, doc?.request?.url, doc?.response?.status);
-// });
-
-// proxy.listen(8888, () => {
-//     console.log("proxy.listen");
-// });
-
-// setTimeout(() => {
-//     proxy.close()
-//     console.log('proxy.close')
-// }, 1000)
