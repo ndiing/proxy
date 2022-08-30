@@ -7,18 +7,6 @@ npm install @ndiinginc/proxy
 ```
 
 ### Index
-- Global
-
-    <!-- properties -->
-    <!-- properties -->
-    <!-- staticproperties -->
-    <!-- staticproperties -->
-    <!-- methods -->
-    <!-- methods -->
-    <!-- staticmethods -->
-    <!-- staticmethods -->
-    <!-- events -->
-    <!-- events -->
 - EventEmitter
 
     <!-- properties -->
@@ -96,33 +84,6 @@ npm install @ndiinginc/proxy
     <!-- staticmethods -->
     <!-- events -->
     <!-- events -->
-
-# Global
-<!--  -->
-
-
-<!-- examples -->
-<!-- examples -->
-
-
-<!-- constructor -->
-### Constructor
-
-<div><a href="./docs/.md" name=""><code>()</code></a></div>
-
-
-<!-- constructor -->
-
-<!-- properties -->
-<!-- properties -->
-<!-- staticproperties -->
-<!-- staticproperties -->
-<!-- methods -->
-<!-- methods -->
-<!-- staticmethods -->
-<!-- staticmethods -->
-<!-- events -->
-<!-- events -->
 
 # EventEmitter
 <!--  -->
