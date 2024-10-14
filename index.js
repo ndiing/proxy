@@ -3,7 +3,7 @@ const {
     getProxyServer,
     start,
     stop,
-}=require('./src/lib/proxy.js')
+}=require('./lib/proxy.js')
 // require('./src/index.js')
 
 module.exports={
