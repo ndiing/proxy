@@ -1,19 +1,19 @@
 {
-  "name": "@ndiinginc/proxy",
-  "version": "2.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@types/node": "^22.7.5"
-  },
-  "dependencies": {
-    "@ndiinginc/cert": "^2.0.4",
-    "@ndiinginc/fetch": "^2.1.5"
-  }
+    "name": "@ndiinginc/proxy",
+    "version": "2.0.0",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "devDependencies": {
+        "@types/node": "^22.7.5"
+    },
+    "dependencies": {
+        "@ndiinginc/cert": "^2.0.4",
+        "@ndiinginc/fetch": "^2.1.5"
+    }
 }
